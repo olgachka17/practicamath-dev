@@ -238,6 +238,22 @@
   .stats-bar .stat-val { font-size: 1.3rem; font-weight: 800; color: var(--primary); }
   .stats-bar .stat-lbl { color: var(--muted); font-size: .75rem; }
 
+  /* TOPIC CARD PROGRESS */
+  .topic-prog-bar-wrap { margin-top: 8px; }
+  .topic-prog-bar {
+    height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .topic-prog-fill {
+    height: 100%; border-radius: 3px; transition: width .4s ease;
+  }
+  .topic-prog-fill.great  { background: var(--success); }
+  .topic-prog-fill.ok     { background: #f59e0b; }
+  .topic-prog-fill.weak   { background: var(--error); }
+  .topic-prog-label {
+    display: flex; justify-content: space-between;
+    font-size: .75rem; margin-top: 3px; color: var(--muted);
+  }
+
   /* TIMER */
   .exam-timer {
     display: flex; align-items: center; gap: 8px;
@@ -1105,22 +1121,43 @@ function buildStatsBar() {
   const wrap = document.getElementById('stats-bar-wrap');
   if (!wrap) return;
 
-  const allAttempts = Object.values(data).reduce((s, v) => s + (v.attempts || 0), 0);
-  if (allAttempts === 0) { wrap.innerHTML = ''; return; }
+  const allAttempts = Object.entries(data)
+    .filter(([k]) => !k.startsWith('topic_'))
+    .reduce((s, [,v]) => s + (v.attempts || 0), 0);
 
-  const allBest = Object.values(data).filter(v => v.attempts > 0).map(v => v.best);
-  const avgBest = allBest.length ? Math.round(allBest.reduce((a,b) => a+b, 0) / allBest.length) : 0;
+  // collect topic stats
+  const topicStats = Object.entries(data)
+    .filter(([k]) => k.startsWith('topic_'))
+    .map(([k, v]) => ({ id: k.replace('topic_',''), best: v.best, title: TOPICS[k.replace('topic_','')]?.title || k }))
+    .filter(t => t.best !== undefined);
+
+  if (allAttempts === 0 && topicStats.length === 0) { wrap.innerHTML = ''; return; }
+
+  const allBest = Object.entries(data).filter(([k,v]) => !k.startsWith('topic_') && v.attempts > 0).map(([,v]) => v.best);
+  const avgBest = allBest.length ? Math.round(allBest.reduce((a,b) => a+b,0) / allBest.length) : 0;
   const maxBest = allBest.length ? Math.max(...allBest) : 0;
+
+  // weak topics (best < 80%)
+  const weak = topicStats.filter(t => t.best < 80).sort((a,b) => a.best - b.best).slice(0,3);
+  const weakHTML = weak.length > 0
+    ? `<div style="margin-top:10px;font-size:.82rem">
+        <b style="color:var(--error)">⚠️ Подтянуть:</b>
+        ${weak.map(t => `<span style="display:inline-block;background:var(--error-bg);color:var(--error);border-radius:8px;padding:2px 8px;margin:2px">${t.title} — ${t.best}%</span>`).join('')}
+       </div>`
+    : topicStats.length > 0
+    ? `<div style="margin-top:6px;font-size:.82rem;color:var(--success)">✅ Все пройденные темы на 80%+</div>`
+    : '';
 
   wrap.innerHTML = `
     <div class="stats-bar">
       <div class="stat"><span class="stat-val">${allAttempts}</span><span class="stat-lbl">попыток</span></div>
-      <div class="stat"><span class="stat-val">${avgBest}%</span><span class="stat-lbl">средний балл</span></div>
-      <div class="stat"><span class="stat-val">${maxBest}%</span><span class="stat-lbl">лучший балл</span></div>
+      <div class="stat"><span class="stat-val">${avgBest || '—'}${avgBest ? '%' : ''}</span><span class="stat-lbl">средний балл</span></div>
+      <div class="stat"><span class="stat-val">${maxBest || '—'}${maxBest ? '%' : ''}</span><span class="stat-lbl">лучший балл</span></div>
       <div class="stat" style="cursor:pointer" onclick="clearProgress()" title="Сбросить прогресс">
         <span class="stat-val" style="font-size:1.1rem">🗑</span><span class="stat-lbl">сбросить</span>
       </div>
-    </div>`;
+    </div>
+    ${weakHTML}`;
 }
 
 function clearProgress() {
@@ -1134,6 +1171,7 @@ function clearProgress() {
 // Build on page load
 buildExamCards();
 buildStatsBar();
+buildTopicCards();
 
 // ── TIMER ──────────────────────────────
 let timerInterval = null;
@@ -1230,20 +1268,55 @@ const TOPIC_META = {
   stepenn: { icon: '√'  },
 };
 
-(function buildTopicCards() {
+function recordTopicResult(topicId, correct, total) {
+  const data = loadProgress();
+  const key = 'topic_' + topicId;
+  if (!data[key]) data[key] = { attempts: 0, best: 0, last: 0 };
+  const pct = Math.round(correct / total * 100);
+  data[key].attempts++;
+  data[key].last = pct;
+  if (pct > data[key].best) data[key].best = pct;
+  saveProgress(data);
+  buildTopicCards();
+}
+
+function buildTopicCards() {
+  const data = loadProgress();
   const container = document.getElementById('topic-cards');
+  if (!container) return;
+  container.innerHTML = '';
   Object.entries(TOPICS).forEach(([id, t]) => {
     const icon = (TOPIC_META[id] || {}).icon || '📘';
     const card = document.createElement('div');
     card.className = 'card';
     card.onclick = () => startTopic(id);
+
+    const p = data['topic_' + id];
+    let progHTML = '';
+    if (p && p.attempts > 0) {
+      const pct = p.best;
+      const cls = pct >= 80 ? 'great' : pct >= 50 ? 'ok' : 'weak';
+      const emoji = pct >= 80 ? '✅' : pct >= 50 ? '⚠️' : '❌';
+      progHTML = `
+        <div class="topic-prog-bar-wrap">
+          <div class="topic-prog-bar">
+            <div class="topic-prog-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+          <div class="topic-prog-label">
+            <span>${emoji} Лучший: ${pct}%</span>
+            <span>${p.attempts} попыт.</span>
+          </div>
+        </div>`;
+    }
+
     card.innerHTML =
       '<div class="card-icon">' + icon + '</div>' +
       '<div class="card-title">' + t.title + '</div>' +
-      '<div class="card-sub">' + t.qs.length + ' заданий</div>';
+      '<div class="card-sub">' + t.qs.length + ' заданий</div>' +
+      progHTML;
     container.appendChild(card);
   });
-})();
+}
 
 function load(title, qs, theory, isExam = false) {
   current = { title, qs, theory, isExam };
@@ -1455,12 +1528,19 @@ function showResults(timesUp = false) {
     const variantId = Object.keys(EXAMS).find(k => EXAMS[k].qs === current.qs);
     if (variantId) recordResult(variantId, correct, total, elapsed);
   }
+
+  // save progress for topic trainer
+  if (!current.isExam && !current.isMistakes) {
+    const topicId = Object.keys(TOPICS).find(k => TOPICS[k].qs === current.qs);
+    if (topicId) recordTopicResult(topicId, correct, total);
+  }
 }
 
 function retryMistakes() {
   const qs = current.mistakeQs;
   if (!qs || qs.length === 0) return;
   load(`Работа над ошибками (${qs.length})`, qs, null, false);
+  current.isMistakes = true;
 }
 
 function retryExam() {

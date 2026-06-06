@@ -385,8 +385,9 @@
     <div id="result-time" style="margin-top:10px;font-size:.9rem;color:var(--muted)"></div>
   </div>
   <div id="answers-review"></div>
-  <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
-    <button class="btn-secondary" onclick="retryExam()">Повторить</button>
+  <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap">
+    <button class="btn-secondary" onclick="retryMistakes()" id="btn-retry-mistakes" style="display:none">❌ Только ошибки</button>
+    <button class="btn-secondary" onclick="retryExam()">🔁 Повторить всё</button>
     <button class="btn-primary" onclick="goHome()">На главную</button>
   </div>
 </div>
@@ -1437,11 +1438,29 @@ function showResults(timesUp = false) {
   show('screen-results');
   renderIn(document.getElementById('result-grade').parentElement);
 
+  // show/hide "retry mistakes" button
+  const mistakeQs = review.filter(r => !r.ok).map(r => r.q);
+  const btnMistakes = document.getElementById('btn-retry-mistakes');
+  if (mistakeQs.length > 0) {
+    btnMistakes.style.display = '';
+    btnMistakes.textContent = `❌ Только ошибки (${mistakeQs.length})`;
+    current.mistakeQs = mistakeQs;
+  } else {
+    btnMistakes.style.display = 'none';
+    current.mistakeQs = [];
+  }
+
   // save progress for exam variants
   if (current.isExam) {
     const variantId = Object.keys(EXAMS).find(k => EXAMS[k].qs === current.qs);
     if (variantId) recordResult(variantId, correct, total, elapsed);
   }
+}
+
+function retryMistakes() {
+  const qs = current.mistakeQs;
+  if (!qs || qs.length === 0) return;
+  load(`Работа над ошибками (${qs.length})`, qs, null, false);
 }
 
 function retryExam() {

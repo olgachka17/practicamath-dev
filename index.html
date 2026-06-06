@@ -219,7 +219,18 @@
     font-size: .86rem; color: var(--warn);
   }
 
-  /* FLASHCARDS */
+  /* TIMER */
+  .exam-timer {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums;
+    padding: 6px 14px; border-radius: 20px;
+    background: var(--primary-light); color: var(--primary);
+    transition: background .3s, color .3s;
+  }
+  .exam-timer.warn { background: #fef3c7; color: #d97706; }
+  .exam-timer.danger { background: var(--error-bg); color: var(--error); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .exam-timer.hidden { display: none; }
   .fc-screen-header { text-align: center; padding: 24px 0 20px; }
   .fc-screen-header h2 { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
   .fc-screen-header p { color: var(--muted); font-size: .9rem; }
@@ -343,8 +354,9 @@
 <!-- EXAM SCREEN -->
 <div class="screen" id="screen-exam">
   <div class="page-header">
-    <button class="back-btn" onclick="goHome()">← Назад</button>
+    <button class="back-btn" onclick="confirmLeaveExam()">← Назад</button>
     <div class="page-title" id="exam-title"></div>
+    <div id="exam-timer" class="exam-timer hidden">⏱ <span id="timer-display">2:00:00</span></div>
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
       <div class="progress-text" id="progress-text">0/0</div>
@@ -366,6 +378,7 @@
     <div class="result-score" id="result-score"></div>
     <div class="result-label" id="result-label"></div>
     <div class="result-grade" id="result-grade"></div>
+    <div id="result-time" style="margin-top:10px;font-size:.9rem;color:var(--muted)"></div>
   </div>
   <div id="answers-review"></div>
   <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
@@ -1020,7 +1033,69 @@ function renderIn(el) {
 // ═══════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════
+// ── TIMER ──────────────────────────────
+let timerInterval = null;
+let timerSeconds = 0;
+let timerElapsed = 0;
+const EXAM_DURATION = 2 * 60 * 60; // 2 hours in seconds
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerSeconds = EXAM_DURATION;
+  timerElapsed = 0;
+  const display = document.getElementById('timer-display');
+  const wrap = document.getElementById('exam-timer');
+  wrap.classList.remove('hidden', 'warn', 'danger');
+  updateTimerDisplay();
+
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    timerElapsed++;
+    updateTimerDisplay();
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      showResults(true); // time's up
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('exam-timer').classList.add('hidden');
+}
+
+function updateTimerDisplay() {
+  const s = timerSeconds;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const str = `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  document.getElementById('timer-display').textContent = str;
+  const wrap = document.getElementById('exam-timer');
+  wrap.classList.remove('warn','danger');
+  if (s <= 300) wrap.classList.add('danger');       // last 5 min — red pulse
+  else if (s <= 900) wrap.classList.add('warn');    // last 15 min — yellow
+}
+
+function formatElapsed(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h} ч ${m} мин ${s} сек`;
+  if (m > 0) return `${m} мин ${s} сек`;
+  return `${s} сек`;
+}
+
+function confirmLeaveExam() {
+  if (confirm('Выйти из экзамена? Прогресс будет потерян.')) {
+    stopTimer();
+    goHome();
+  }
+}
+// ───────────────────────────────────────
+
 function goHome() {
+  stopTimer();
   show('screen-home');
 }
 function show(id) {
@@ -1031,11 +1106,11 @@ function show(id) {
 
 function startExam(id) {
   const e = EXAMS[id];
-  load(e.title, e.qs, null);
+  load(e.title, e.qs, null, true); // true = isExam
 }
 function startTopic(id) {
   const t = TOPICS[id];
-  load(t.title, t.qs, t.theory);
+  load(t.title, t.qs, t.theory, false);
 }
 
 const TOPIC_META = {
@@ -1068,8 +1143,8 @@ const TOPIC_META = {
   });
 })();
 
-function load(title, qs, theory) {
-  current = { title, qs, theory };
+function load(title, qs, theory, isExam = false) {
+  current = { title, qs, theory, isExam };
   answers = qs.map(() => null);
 
   // shuffle options for each question
@@ -1090,6 +1165,9 @@ function load(title, qs, theory) {
   document.getElementById('exam-title').textContent = title;
   renderQuestions();
   show('screen-exam');
+
+  if (isExam) startTimer();
+  else stopTimer();
 }
 
 function renderQuestions() {
@@ -1199,7 +1277,9 @@ function updateProgress() {
   document.getElementById('progress-text').textContent = `${done}/${total}`;
 }
 
-function showResults() {
+function showResults(timesUp = false) {
+  stopTimer();
+  const elapsed = timerElapsed;
   // Check all remaining
   checkAll();
 
@@ -1227,6 +1307,15 @@ function showResults() {
   const g = document.getElementById('result-grade');
   g.textContent = `Оценка: ${grade}`;
   g.className = `result-grade ${cls}`;
+
+  const timeEl = document.getElementById('result-time');
+  if (current.isExam && elapsed > 0) {
+    timeEl.innerHTML = timesUp
+      ? `⏰ Время вышло! Затрачено: ${formatElapsed(elapsed)}`
+      : `⏱ Затраченное время: ${formatElapsed(elapsed)}`;
+  } else {
+    timeEl.innerHTML = '';
+  }
 
   const rev = document.getElementById('answers-review');
   rev.innerHTML = '<h3 style="margin-bottom:12px">Разбор</h3>';
@@ -1263,6 +1352,8 @@ function retryExam() {
   });
   renderQuestions();
   show('screen-exam');
+  if (current.isExam) startTimer();
+  else stopTimer();
 }
 
 // ═══════════════════════════════════════

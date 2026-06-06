@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренажёр по математике — 1 курс</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="onKatexReady()"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0f4ff;
+    --card: #ffffff;
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --error: #dc2626;
+    --error-bg: #fee2e2;
+    --warn: #d97706;
+    --warn-bg: #fef3c7;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 12px;
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .screen { display: none; max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+  .screen.active { display: block; }
+
+  /* HOME */
+  .home-header { text-align: center; padding: 40px 0 32px; }
+  .home-header h1 { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+  .home-header p { color: var(--muted); font-size: 1.05rem; }
+  .section-title { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 28px 0 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--card); border-radius: var(--radius); border: 2px solid var(--border);
+    padding: 18px 20px; cursor: pointer; transition: all .16s;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,.12); }
+  .card.variant { background: var(--primary-light); border-color: #c7d2fe; }
+  .card-icon { font-size: 1.6rem; }
+  .card-title { font-weight: 700; font-size: .98rem; }
+  .card-sub { font-size: .82rem; color: var(--muted); }
+
+  /* HEADER */
+  .page-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    background: var(--card); border-radius: var(--radius); padding: 14px 18px;
+    border: 1px solid var(--border);
+  }
+  .back-btn {
+    background: none; border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; cursor: pointer; font-size: .88rem; color: var(--muted); transition: all .15s;
+    white-space: nowrap;
+  }
+  .back-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .page-title { font-weight: 800; font-size: 1.15rem; flex: 1; }
+  .progress-wrap { display: flex; align-items: center; gap: 8px; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; width: 120px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .3s; }
+  .progress-text { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+
+  /* QUESTION */
+  .question-block {
+    background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+    padding: 22px 24px; margin-bottom: 14px; transition: border-color .2s;
+  }
+  .question-block.answered-ok { border-color: var(--success); }
+  .question-block.answered-fail { border-color: var(--error); }
+  .question-num { font-size: .75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+  .question-text { font-size: 1rem; line-height: 1.75; margin-bottom: 18px; }
+
+  /* OPTIONS */
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .option-btn {
+    border: 2px solid var(--border); border-radius: 10px; padding: 12px 16px;
+    cursor: pointer; font-size: .95rem; background: var(--card); transition: all .15s;
+    font-family: inherit; text-align: left; line-height: 1.5;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .option-letter {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; font-weight: 700; color: var(--muted); flex-shrink: 0;
+    transition: all .15s;
+  }
+  .option-btn:not(.locked):hover { border-color: var(--primary); background: var(--primary-light); }
+  .option-btn:not(.locked):hover .option-letter { background: var(--primary); color: #fff; }
+  .option-btn.selected { border-color: var(--primary); background: var(--primary-light); }
+  .option-btn.selected .option-letter { background: var(--primary); color: #fff; }
+  .option-btn.correct { border-color: var(--success) !important; background: var(--success-bg) !important; }
+  .option-btn.correct .option-letter { background: var(--success) !important; color: #fff !important; }
+  .option-btn.wrong { border-color: var(--error) !important; background: var(--error-bg) !important; }
+  .option-btn.wrong .option-letter { background: var(--error) !important; color: #fff !important; }
+  .option-btn.locked { cursor: default; }
+  .option-btn.dim { opacity: .45; }
+
+  /* FEEDBACK */
+  .q-feedback { margin-top: 12px; font-size: .88rem; padding: 9px 13px; border-radius: 8px; display: none; line-height: 1.5; }
+  .q-feedback.show-ok { display: block; background: var(--success-bg); color: var(--success); }
+  .q-feedback.show-fail { display: block; background: var(--error-bg); color: var(--error); }
+  .q-feedback.show-hint { display: block; background: var(--warn-bg); color: var(--warn); }
+
+  .q-actions { margin-top: 12px; display: flex; gap: 8px; }
+  .hint-btn {
+    border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 14px;
+    cursor: pointer; font-size: .85rem; color: var(--muted); background: var(--card);
+    transition: all .15s;
+  }
+  .hint-btn:hover { border-color: var(--warn); color: var(--warn); }
+
+  /* HINT BOX */
+  .theory-box {
+    background: #fdf4ff; border: 1px solid #e9d5ff; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 18px; font-size: .9rem; line-height: 1.8;
+  }
+  .theory-box b { color: #7c3aed; }
+
+  /* ACTIONS */
+  .sticky-actions {
+    position: sticky; bottom: 0; background: linear-gradient(transparent, var(--bg) 40%);
+    padding: 16px 0 4px; display: flex; gap: 12px; justify-content: flex-end;
+  }
+  .btn-primary {
+    background: var(--primary); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 28px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-secondary {
+    background: var(--card); color: var(--primary); border: 2px solid var(--primary);
+    border-radius: 10px; padding: 10px 22px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-secondary:hover { background: var(--primary-light); }
+
+  /* RESULTS */
+  .result-box {
+    background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+    padding: 32px; text-align: center; margin-bottom: 20px;
+  }
+  .result-score { font-size: 3.5rem; font-weight: 900; color: var(--primary); line-height: 1; }
+  .result-label { color: var(--muted); margin-top: 6px; font-size: 1rem; }
+  .result-grade { display: inline-block; margin-top: 16px; font-size: 1.3rem; font-weight: 800; padding: 10px 28px; border-radius: 50px; }
+  .grade-5 { background: var(--success-bg); color: var(--success); }
+  .grade-4 { background: #dbeafe; color: #1d4ed8; }
+  .grade-3 { background: var(--warn-bg); color: var(--warn); }
+  .grade-2 { background: var(--error-bg); color: var(--error); }
+
+  .review-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px; border-radius: 8px; margin-bottom: 8px;
+  }
+  .review-item.ok { background: var(--success-bg); }
+  .review-item.fail { background: var(--error-bg); }
+  .review-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .review-text { font-size: .88rem; line-height: 1.6; }
+
+  /* THEORY CARDS */
+  .theory-screen-header { text-align: center; padding: 32px 0 24px; }
+  .theory-screen-header h2 { font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-bottom: 6px; }
+  .theory-screen-header p { color: var(--muted); font-size: .95rem; }
+
+  .theory-cards-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+
+  .theory-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 0; border-top: none;
+    overflow: hidden; cursor: pointer; transition: box-shadow .18s;
+  }
+  .theory-card:first-child { border-radius: var(--radius) var(--radius) 0 0; border-top: 1px solid var(--border); }
+  .theory-card:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+  .theory-card:only-child { border-radius: var(--radius); border-top: 1px solid var(--border); }
+  .theory-card:hover { box-shadow: 0 4px 20px rgba(79,70,229,.1); z-index: 1; position: relative; }
+
+  .theory-card-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; user-select: none;
+  }
+  .theory-card-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .theory-card-title { font-weight: 700; font-size: 1rem; flex: 1; }
+  .theory-card-arrow { color: var(--muted); font-size: 1rem; transition: transform .25s; }
+  .theory-card.open .theory-card-arrow { transform: rotate(90deg); }
+
+  .theory-card-body {
+    display: none; padding: 0 20px 20px 52px;
+    font-size: .93rem; line-height: 1.85; color: var(--text);
+    border-top: 1px solid var(--border);
+  }
+  .theory-card.open .theory-card-body { display: block; padding-top: 16px; }
+  .theory-card-body h4 { font-size: .82rem; font-weight: 700; color: var(--primary); text-transform: uppercase;
+    letter-spacing: .07em; margin: 14px 0 6px; }
+  .theory-card-body .formula-block {
+    background: var(--primary-light); border-left: 3px solid var(--primary);
+    border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: .92rem;
+  }
+  .theory-card-body .step-list { counter-reset: step; margin: 8px 0; }
+  .theory-card-body .step-list li {
+    counter-increment: step; list-style: none; padding: 4px 0 4px 28px; position: relative;
+  }
+  .theory-card-body .step-list li::before {
+    content: counter(step); position: absolute; left: 0;
+    width: 20px; height: 20px; background: var(--primary); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 800; top: 6px;
+  }
+  .theory-card-body .example-box {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0; font-size: .88rem;
+  }
+  .theory-card-body .example-box b { color: var(--success); }
+  .theory-card-body .warn-note {
+    background: var(--warn-bg); border-radius: 6px; padding: 8px 12px; margin: 8px 0;
+    font-size: .86rem; color: var(--warn);
+  }
+
+  /* FLASHCARDS */
+  .fc-screen-header { text-align: center; padding: 24px 0 20px; }
+  .fc-screen-header h2 { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .fc-screen-header p { color: var(--muted); font-size: .9rem; }
+
+  .fc-progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .fc-progress-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .fc-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #818cf8); border-radius: 4px; transition: width .4s ease; }
+  .fc-progress-label { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+
+  .fc-card-wrap {
+    perspective: 1000px; margin-bottom: 20px; cursor: pointer;
+  }
+  .fc-card-inner {
+    position: relative; width: 100%; min-height: 220px;
+    transform-style: preserve-3d; transition: transform .5s ease;
+    border-radius: var(--radius);
+  }
+  .fc-card-wrap.flipped .fc-card-inner { transform: rotateY(180deg); }
+
+  .fc-face {
+    position: absolute; width: 100%; min-height: 220px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: var(--radius); border: 2px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 28px 28px 24px; text-align: center;
+  }
+  .fc-front { background: var(--card); }
+  .fc-back { background: #f5f3ff; border-color: #c4b5fd; transform: rotateY(180deg); }
+
+  .fc-label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .1em; margin-bottom: 14px; }
+  .fc-front .fc-label { color: var(--primary); }
+  .fc-back .fc-label { color: #7c3aed; }
+
+  .fc-question { font-size: 1.05rem; font-weight: 700; line-height: 1.6; color: var(--text); }
+  .fc-answer { font-size: .95rem; line-height: 1.75; color: var(--text); }
+
+  .fc-tap-hint { margin-top: 16px; font-size: .78rem; color: var(--muted); }
+
+  .fc-rating { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+  .fc-rate-btn {
+    flex: 1; max-width: 140px; border: none; border-radius: 10px;
+    padding: 12px 10px; font-size: .9rem; font-weight: 700; cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  .fc-rate-btn:active { transform: scale(.96); }
+  .fc-rate-btn.knew { background: var(--success-bg); color: var(--success); }
+  .fc-rate-btn.forgot { background: var(--error-bg); color: var(--error); }
+
+  .fc-result-box {
+    background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+    padding: 32px; text-align: center; margin-bottom: 20px;
+  }
+  .fc-result-score { font-size: 3rem; font-weight: 900; color: var(--primary); }
+  .fc-result-sub { color: var(--muted); margin-top: 6px; }
+  .fc-stars { font-size: 2rem; margin: 14px 0 4px; }
+
+  .fc-topic-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; }
+  .fc-topic-btn {
+    background: var(--card); border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; cursor: pointer; text-align: left; transition: all .15s; font-family: inherit;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .fc-topic-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+  .fc-topic-btn .fc-t-icon { font-size: 1.4rem; }
+  .fc-topic-btn .fc-t-name { font-weight: 700; font-size: .95rem; }
+  .fc-topic-btn .fc-t-count { font-size: .8rem; color: var(--muted); }
+
+  @media (max-width: 560px) {
+    .fc-rating { flex-direction: column; }
+    .fc-rate-btn { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="home-header">
+    <h1>📐 Тренажёр по математике</h1>
+    <p>Подготовка к экзамену · 1 курс СПО</p>
+  </div>
+
+  <div class="section-title">Варианты экзамена</div>
+  <div class="cards">
+    <div class="card variant" onclick="startExam('v1')">
+      <div class="card-icon">📝</div>
+      <div class="card-title">Вариант 1</div>
+      <div class="card-sub">8 заданий · 4 варианта ответа</div>
+    </div>
+    <div class="card variant" onclick="startExam('v2')">
+      <div class="card-icon">📝</div>
+      <div class="card-title">Вариант 2</div>
+      <div class="card-sub">8 заданий · 4 варианта ответа</div>
+    </div>
+    <div class="card variant" onclick="startExam('v3')">
+      <div class="card-icon">📝</div>
+      <div class="card-title">Вариант 3</div>
+      <div class="card-sub">8 заданий · 4 варианта ответа</div>
+    </div>
+  </div>
+
+  <div class="section-title">Теория</div>
+  <div class="cards">
+    <div class="card" onclick="show('screen-theory')" style="background: #fff7ed; border-color: #fed7aa;">
+      <div class="card-icon">📖</div>
+      <div class="card-title">Теоретические вопросы</div>
+      <div class="card-sub">10 тем — раскрывайте по одной</div>
+    </div>
+    <div class="card" onclick="show('screen-fc-topics')" style="background: #f0fdf4; border-color: #bbf7d0;">
+      <div class="card-icon">🃏</div>
+      <div class="card-title">Флэшкарточки</div>
+      <div class="card-sub">Вопрос → думай → проверь себя</div>
+    </div>
+  </div>
+
+  <div class="section-title">Тренажёр по темам</div>
+  <div class="cards" id="topic-cards"></div>
+</div>
+
+<!-- EXAM SCREEN -->
+<div class="screen" id="screen-exam">
+  <div class="page-header">
+    <button class="back-btn" onclick="goHome()">← Назад</button>
+    <div class="page-title" id="exam-title"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-text" id="progress-text">0/0</div>
+    </div>
+  </div>
+  <div id="questions-container"></div>
+  <div class="sticky-actions">
+    <button class="btn-primary" onclick="showResults()">Завершить →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="screen" id="screen-results">
+  <div class="page-header">
+    <button class="back-btn" onclick="goHome()">← На главную</button>
+    <div class="page-title">Результаты</div>
+  </div>
+  <div class="result-box">
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label" id="result-label"></div>
+    <div class="result-grade" id="result-grade"></div>
+  </div>
+  <div id="answers-review"></div>
+  <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+    <button class="btn-secondary" onclick="retryExam()">Повторить</button>
+    <button class="btn-primary" onclick="goHome()">На главную</button>
+  </div>
+</div>
+
+<!-- FLASHCARD TOPIC SELECT -->
+<div class="screen" id="screen-fc-topics">
+  <div class="page-header">
+    <button class="back-btn" onclick="goHome()">← Назад</button>
+    <div class="page-title">🃏 Флэшкарточки</div>
+  </div>
+  <div class="fc-screen-header">
+    <h2>Выберите тему</h2>
+    <p>Карточки перевернуть — нажать. Затем оцените себя честно.</p>
+  </div>
+  <div class="fc-topic-selector" id="fc-topic-list"></div>
+  <div style="margin-top:14px">
+    <button class="btn-primary" onclick="startFlashcards('all')" style="width:100%">🔀 Все темы вперемешку</button>
+  </div>
+</div>
+
+<!-- FLASHCARD PLAY -->
+<div class="screen" id="screen-fc">
+  <div class="page-header">
+    <button class="back-btn" onclick="show('screen-fc-topics')">← Темы</button>
+    <div class="page-title" id="fc-title"></div>
+  </div>
+  <div class="fc-progress-row">
+    <div class="fc-progress-bar"><div class="fc-progress-fill" id="fc-prog-fill" style="width:0%"></div></div>
+    <div class="fc-progress-label" id="fc-prog-label">0 / 0</div>
+  </div>
+
+  <div class="fc-card-wrap" id="fc-card-wrap" onclick="flipCard()">
+    <div class="fc-card-inner" id="fc-card-inner">
+      <div class="fc-face fc-front">
+        <div class="fc-label">❓ Вопрос</div>
+        <div class="fc-question" id="fc-q-text"></div>
+        <div class="fc-tap-hint">Нажмите, чтобы увидеть ответ</div>
+      </div>
+      <div class="fc-face fc-back">
+        <div class="fc-label">💡 Ответ</div>
+        <div class="fc-answer" id="fc-a-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-rating" id="fc-rating" style="display:none">
+    <button class="fc-rate-btn forgot" onclick="rateCard(false)">😕 Не знал</button>
+    <button class="fc-rate-btn knew" onclick="rateCard(true)">✅ Знал!</button>
+  </div>
+  <div id="fc-rating-placeholder" style="height:52px"></div>
+</div>
+
+<!-- FLASHCARD RESULTS -->
+<div class="screen" id="screen-fc-result">
+  <div class="page-header">
+    <button class="back-btn" onclick="show('screen-fc-topics')">← Темы</button>
+    <div class="page-title">Результат</div>
+  </div>
+  <div class="fc-result-box">
+    <div class="fc-stars" id="fc-stars"></div>
+    <div class="fc-result-score" id="fc-res-score"></div>
+    <div class="fc-result-sub" id="fc-res-sub"></div>
+  </div>
+  <div id="fc-missed-list"></div>
+  <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap">
+    <button class="btn-secondary" onclick="retryMissed()">🔁 Повторить «не знал»</button>
+    <button class="btn-primary" onclick="show('screen-fc-topics')">К темам</button>
+  </div>
+</div>
+<div class="screen" id="screen-theory">
+  <div class="page-header">
+    <button class="back-btn" onclick="goHome()">← Назад</button>
+    <div class="page-title">📖 Теория</div>
+  </div>
+  <div class="theory-screen-header">
+    <h2>Теоретические вопросы</h2>
+    <p>Нажмите на тему, чтобы открыть конспект</p>
+  </div>
+  <div class="theory-cards-grid" id="theory-accordion"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA — questions with 4 options each
+// ═══════════════════════════════════════
+
+// Helper: q(text, options[4], correctIndex 0-3, hint)
+function q(text, options, correct, hint) {
+  return { text, options, correct, hint };
+}
+
+const EXAMS = {
+  v1: {
+    title: 'Вариант 1',
+    qs: [
+      q('Найдите область определения функции $y = \\dfrac{\\sqrt{\\sqrt{x}-2}}{\\sqrt{x}-4}$',
+        ['$[4;\\,16)\\cup(16;+\\infty)$','$[0;\\,16)\\cup(16;+\\infty)$','$[4;+\\infty)$','$(4;\\,16)$'],
+        0, 'Нужно $\\sqrt{x}\\geq 2$ (т.е. $x\\geq 4$) и $\\sqrt{x}\\neq 4$ (т.е. $x\\neq16$)'),
+
+      q('Выполните действие: $z = \\dfrac{2-2i}{4+i}$',
+        ['$\\dfrac{6}{17}-\\dfrac{10}{17}i$','$\\dfrac{6}{17}+\\dfrac{10}{17}i$','$\\dfrac{2}{5}-\\dfrac{2}{5}i$','$\\dfrac{6}{15}-\\dfrac{10}{15}i$'],
+        0, 'Умножьте на сопряжённое $(4-i)$: числитель $(2-2i)(4-i)=8-2i-8i+2i^2=6-10i$, знаменатель $16+1=17$'),
+
+      q('Найдите скалярное произведение векторов $\\vec{a}=(3;-5)$ и $\\vec{b}=(-2;4)$',
+        ['$-26$','$26$','$-14$','$14$'],
+        0, '$\\vec{a}\\cdot\\vec{b}=3\\cdot(-2)+(-5)\\cdot4=-6-20=-26$'),
+
+      q('Решите уравнение: $\\sqrt{x+11}=x-1$',
+        ['$x=5$','$x=-2$','$x=5$ и $x=-2$','Нет решений'],
+        0, 'Возводим в квадрат: $x+11=(x-1)^2=x^2-2x+1$, $x^2-3x-10=0$. Корни $x=5$ и $x=-2$. Проверка: $x=-2$ не подходит ($\\sqrt{9}=3\\neq-3$)'),
+
+      q('Решите уравнение: $2\\ln^2 x - 4\\ln x - 16 = 0$',
+        ['$x=e^4$ и $x=e^{-2}$','$x=4$ и $x=-2$','$x=e^2$ и $x=e^{-4}$','$x=e^4$'],
+        0, 'Замена $t=\\ln x$: $2t^2-4t-16=0$, $t^2-2t-8=0$. Корни $t=4$ и $t=-2$, значит $\\ln x=4\\Rightarrow x=e^4$; $\\ln x=-2\\Rightarrow x=e^{-2}$'),
+
+      q('Решите неравенство: $\\log_{10}(x-9)<3$',
+        ['$x\\in(9;\\,1009)$','$x\\in(0;\\,1009)$','$x\\in(9;+\\infty)$','$x\\in(9;\\,100)$'],
+        0, 'ОДЗ: $x>9$. Затем $x-9<10^3=1000$, т.е. $x<1009$. Итого $(9;1009)$'),
+
+      q('Боковое ребро правильной треугольной пирамиды равно 5 см, сторона основания — 6 см. Найдите площадь боковой поверхности.',
+        ['$S=36\\text{ см}^2$','$S=45\\text{ см}^2$','$S=60\\text{ см}^2$','$S=27\\text{ см}^2$'],
+        0, 'Апофема грани: $l=\\sqrt{5^2-3^2}=4$. $S_{бок}=\\dfrac{1}{2}\\cdot P_{осн}\\cdot l=\\dfrac{1}{2}\\cdot18\\cdot4=36$'),
+
+      q('Найдите интеграл $\\displaystyle\\int\\!\\left(x^4-\\dfrac{1}{x^2}+5\\right)dx$',
+        ['$\\dfrac{x^5}{5}+\\dfrac{1}{x}+5x+C$','$\\dfrac{x^5}{5}-\\dfrac{1}{x}+5x+C$','$4x^3+\\dfrac{2}{x^3}+C$','$\\dfrac{x^5}{5}+\\dfrac{1}{x}+C$'],
+        0, '$\\int x^4=\\frac{x^5}{5}$; $\\int(-x^{-2})=x^{-1}=\\frac{1}{x}$ (два минуса — плюс); $\\int5=5x$'),
+    ]
+  },
+
+  v2: {
+    title: 'Вариант 2',
+    qs: [
+      q('Найдите область определения функции $y = \\dfrac{\\sqrt{x^2-4x}}{x^2-9}$',
+        ['$(-\\infty;-3)\\cup(-3;\\,0]\\cup[4;+\\infty)$','$[0;\\,4]$','$(-\\infty;0]\\cup[4;+\\infty)$','$[4;+\\infty)$'],
+        0, 'Нужно $x^2-4x\\geq0$, т.е. $x(x-4)\\geq0$: $x\\leq0$ или $x\\geq4$. И $x^2-9\\neq0$, т.е. $x\\neq\\pm3$. Из области $x\\leq0$ исключается только $x=-3$; точка $x=3$ и так не входит.'),
+
+      q('Найдите число, сопряжённое с $z=(10-2i)^2$',
+        ['$96+40i$','$96-40i$','$-96+40i$','$104+40i$'],
+        0, '$(10-2i)^2=100-40i+4i^2=100-40i-4=96-40i$. Сопряжённое — меняем знак: $96+40i$'),
+
+      q('Даны векторы $\\vec{a}=(-2;\\,3)$ и $\\vec{b}=(4;\\,1)$. Найдите $\\vec{a}\\cdot\\vec{b}$',
+        ['$-5$','$5$','$-11$','$11$'],
+        0, '$\\vec{a}\\cdot\\vec{b}=(-2)\\cdot4+3\\cdot1=-8+3=-5$'),
+
+      q('Решите уравнение: $2\\sin^2 x+\\sin x\\cos x=0$',
+        ['$x=\\pi n,\,n\in\mathbb{Z}$ и $x=\\operatorname{arctg}(-\\tfrac{1}{2})+\\pi n,\,n\in\mathbb{Z}$','$x=\\pi n,\,n\in\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\,n\in\mathbb{Z}$','$x=\\dfrac{\\pi}{2}+\\pi n,\,n\in\mathbb{Z}$'],
+        0, '$\\sin x(2\\sin x+\\cos x)=0$. Либо $\\sin x=0\\Rightarrow x=\\pi n,\,n\in\mathbb{Z}$; либо $\\operatorname{tg} x=-\\frac{1}{2}\\Rightarrow x=\\operatorname{arctg}(-\\frac{1}{2})+\\pi n,\,n\in\mathbb{Z}$'),
+
+      q('Решите уравнение: $100^x-7\\cdot10^x-30=0$',
+        ['$x=1$','$x=2$','$x=0$','$x=\\lg30$'],
+        0, 'Замена $t=10^x>0$: $t^2-7t-30=0$. Корни $t=10$ и $t=-3$ (не подходит). Значит $10^x=10$, $x=1$'),
+
+      q('Решите неравенство: $\\left(\\dfrac{1}{3}\\right)^{x}\\leq27$',
+        ['$(-\\infty;-3]$','$[-3;+\\infty)$','$[3;+\\infty)$','$(-\\infty;3]$'],
+        1, '$\\left(\\frac{1}{3}\\right)^x=3^{-x}\\leq3^3$. Основание $3>1$, знак сохраняется: $-x\\leq3$, т.е. $x\\geq-3$. Ответ: $[-3;+\\infty)$'),
+
+      q('Боковое ребро правильной четырёхугольной пирамиды равно 5 см, сторона основания — 6 см. Площадь боковой поверхности:',
+        ['$S=48\\text{ см}^2$','$S=60\\text{ см}^2$','$S=36\\text{ см}^2$','$S=120\\text{ см}^2$'],
+        0, 'Апофема грани: $l=\\sqrt{5^2-3^2}=4$. $S_{бок}=\\frac{1}{2}\\cdot4\\cdot6\\cdot4=48$'),
+
+      q('Найдите интеграл $\\displaystyle\\int\\!\\left(5x^4+\\dfrac{2}{x^2}+6\\right)dx$',
+        ['$x^5-\\dfrac{2}{x}+6x+C$','$x^5+\\dfrac{2}{x}+6x+C$','$20x^3-\\dfrac{4}{x^3}+C$','$x^5-\\dfrac{2}{x}+C$'],
+        0, '$\\int5x^4=x^5$; $\\int2x^{-2}=\\frac{2x^{-1}}{-1}=-\\frac{2}{x}$; $\\int6=6x$'),
+    ]
+  },
+
+  v3: {
+    title: 'Вариант 3',
+    qs: [
+      q('Найдите область определения функции $y = \\dfrac{6\\sqrt{x^2+x}}{x^2-1}$',
+        ['$(-\\infty;-1)\\cup[-1;\\,0]\\cup(1;+\\infty)$','$[0;\\,1)$','$[-1;\\,0]\\cup[1;+\\infty)$','$(-\\infty;-1)\\cup(0;+\\infty)$'],
+        0, '$x^2+x=x(x+1)\\geq0$ при $x\\leq-1$ или $x\\geq0$. И $x^2-1\\neq0$, т.е. $x\\neq\\pm1$. Объединяем.'),
+
+      q('Найдите число, сопряжённое с $z=(9-2i)^2$',
+        ['$77+36i$','$77-36i$','$-77+36i$','$85-36i$'],
+        0, '$(9-2i)^2=81-36i+4i^2=81-36i-4=77-36i$. Сопряжённое: $77+36i$'),
+
+      q('Векторы $\\vec{a}$ и $\\vec{b}$ коллинеарны, $\\vec{a}=(2;\\,-8)$, ордината $\\vec{b}$ равна 24. Найдите $|\\vec{b}|$.',
+        ['$6\\sqrt{17}$','$\\sqrt{576}=24$','$\\sqrt{585}$','$12\\sqrt{5}$'],
+        0, 'Коллинеарность: $\\frac{b_1}{2}=\\frac{24}{-8}=-3$, т.е. $b_1=-6$. $|\\vec{b}|=\\sqrt{36+576}=\\sqrt{612}=6\\sqrt{17}$'),
+
+      q('Решите уравнение: $100^x-7\\cdot10^x-30=0$  (замените $t=10^x$)',
+        ['$x=1$','$x=\\log10$','$x=0$','$x=-1$'],
+        0, '$t^2-7t-30=0$, $t=10$ или $t=-3$ (не подходит). $10^x=10\\Rightarrow x=1$'),
+
+      q('Решите уравнение: $\\cos\\dfrac{x}{2}+\\sin\\dfrac{x}{2}=0$',
+        ['$x=\\dfrac{3\\pi}{2}+2\\pi n,\,n\in\mathbb{Z}$','$x=\\dfrac{\\pi}{2}+2\\pi n,\,n\in\mathbb{Z}$','$x=\\pi n,\,n\in\mathbb{Z}$','$x=-\\dfrac{\\pi}{4}+\\pi n,\,n\in\mathbb{Z}$'],
+        [0,3], 'Оба варианта верны: $\\frac{x}{2}=-\\frac{\\pi}{4}+\\pi n\\Rightarrow x=-\\frac{\\pi}{2}+2\\pi n = \\frac{3\\pi}{2}+2\\pi n$ — одно и то же множество'),
+
+      q('Осевое сечение конуса — равносторонний треугольник со стороной 10 см. Найдите объём конуса.',
+        ['$\\dfrac{125\\pi\\sqrt{3}}{3}\\text{ см}^3$','$50\\pi\\sqrt{3}\\text{ см}^3$','$\\dfrac{250\\pi}{3}\\text{ см}^3$','$25\\pi\\sqrt{3}\\text{ см}^3$'],
+        0, 'Диаметр=10, $r=5$. Высота $h=\\sqrt{10^2-5^2}=5\\sqrt{3}$. $V=\\frac{1}{3}\\pi r^2h=\\frac{1}{3}\\pi\\cdot25\\cdot5\\sqrt{3}=\\frac{125\\pi\\sqrt{3}}{3}$'),
+
+      q('Решите неравенство: $\\log_{10}(12-x)>0$',
+        ['$(-\\infty;\\,11)$','$(11;\\,12)$','$(-\\infty;\\,12)$','$(11;+\\infty)$'],
+        0, 'ОДЗ: $x<12$. Основание $>1$: $12-x>10^0=1$, т.е. $x<11$. Итого $(-\\infty;\\,11)$'),
+
+      q('Найдите интеграл $\\displaystyle\\int\\!\\left(12x^4+\\dfrac{1}{x^2}-20x\\right)dx$',
+        ['$\\dfrac{12x^5}{5}-\\dfrac{1}{x}-10x^2+C$','$\\dfrac{12x^5}{5}+\\dfrac{1}{x}-10x^2+C$','$48x^3-\\dfrac{2}{x^3}-20+C$','$\\dfrac{12x^5}{5}-\\dfrac{1}{x}+C$'],
+        0, '$\\int12x^4=\\frac{12x^5}{5}$; $\\int x^{-2}=\\frac{x^{-1}}{-1}=-\\frac{1}{x}$; $\\int20x=10x^2$'),
+    ]
+  }
+};
+
+const TOPICS = {
+  domain: {
+    title: 'Область определения',
+    theory: '<b>Корень чётной степени:</b> подкоренное ≥ 0<br><b>Дробь:</b> знаменатель ≠ 0<br><b>Логарифм $\\log_a f(x)$:</b> $f(x) > 0$<br>Запишите все условия и найдите пересечение.',
+    qs: [
+      q('$y=\\sqrt{x-3}$', ['$[3;+\\infty)$','$(-3;+\\infty)$','$(3;+\\infty)$','$(-\\infty;3]$'], 0, '$x-3\\geq0$'),
+      q('$y=\\dfrac{1}{x-5}$', ['$(-\\infty;\\,5)\\cup(5;+\\infty)$','$x>5$','$x<5$','$(-\\infty;5]$'], 0, '$x-5\\neq0\\Rightarrow x\\neq5$, то есть все $x$, кроме $5$'),
+      q('$y=\\sqrt{2x-6}+\\dfrac{1}{x-4}$', ['$[3;4)\\cup(4;+\\infty)$','$[3;+\\infty)$','$(3;4)$','$[4;+\\infty)$'], 0, '$2x-6\\geq0\\Rightarrow x\\geq3$ и $x\\neq4$'),
+      q('$y=\\log_2(x+1)$', ['$(-1;+\\infty)$','$[0;+\\infty)$','$(-\\infty;-1)$','$(-1;\\infty)$ кроме $0$'], 0, '$x+1>0\\Rightarrow x>-1$'),
+      q('$y=\\dfrac{\\sqrt{x+2}}{x^2-9}$', ['$[-2;3)\\cup(3;+\\infty)$','$[-2;+\\infty)$','$(-3;3)$','$[-2;3]$'], 0, '$x+2\\geq0$ и $x\\neq\\pm3$; из $x\\geq-2$ исключается только $x=3$'),
+      q('$y=\\sqrt{4-x^2}$', ['$[-2;\\,2]$','$(-2;2)$','$[0;2]$','$(-\\infty;-2]\\cup[2;+\\infty)$'], 0, '$4-x^2\\geq0\\Rightarrow x^2\\leq4$'),
+      q('$y=\\dfrac{1}{\\sqrt{x-1}}$', ['$(1;+\\infty)$','$[1;+\\infty)$','$(-\\infty;1)$','$(-1;+\\infty)$'], 0, 'Нужно $x-1>0$ (не $\\geq0$, т.к. в знаменателе)'),
+      q('$y=\\ln(x^2-4)$', ['$(-\\infty;-2)\\cup(2;+\\infty)$','$(-2;2)$','$[2;+\\infty)$','$(-\\infty;4)$'], 0, '$x^2-4>0\\Rightarrow|x|>2$'),
+      q('$y=\\dfrac{\\sqrt{x}}{\\sqrt{x}-2}$', ['$[0;4)\\cup(4;+\\infty)$','$[0;+\\infty)$','$(0;4)$','$[4;+\\infty)$'], 0, '$x\\geq0$ и $\\sqrt{x}\\neq2$ (т.е. $x\\neq4$)'),
+      q('$y=\\sqrt{\\dfrac{x-1}{x+3}}$', ['$(-\\infty;-3)\\cup[1;+\\infty)$','$[1;+\\infty)$','$(-3;1)$','$[-3;1]$'], 0, 'Дробь $\\geq0$: числитель и знаменатель одного знака, $x\\neq-3$'),
+      q('$y=\\sqrt{\\dfrac{18x-2x^2}{7x+7}}$', ['$(-\\infty;-1)\\cup[0;\\,9]$','$[0;\\,9]$','$(-1;0)\\cup(0;9)$','$[0;\\,9)$'], 0, '$=\\frac{2x(9-x)}{7(x+1)}\\geq0$, $x\\neq-1$. Знаменатель $>0$ при $x>-1$; числитель $\\geq0$ при $0\\leq x\\leq9$. Плюс $x<-1$ (оба знака совпадают).'),
+      q('$y=\\sqrt{20x-5}+\\sqrt{2-2x}$', ['$\\left[\\dfrac{1}{4};\\,1\\right]$','$\\left[\\dfrac{1}{4};+\\infty\\right)$','$\\left[0;\\,1\\right]$','$\\left(\\dfrac{1}{4};\\,1\\right)$'], 0, '$20x-5\\geq0\\Rightarrow x\\geq\\frac{1}{4}$; $2-2x\\geq0\\Rightarrow x\\leq1$. Пересечение: $\\left[\\frac{1}{4};1\\right]$'),
+      q('$y=\\sqrt{3+3x}-\\dfrac{28}{x-7}$', ['$[-1;\\,7)\\cup(7;+\\infty)$','$[-1;+\\infty)$','$(-1;\\,7)$','$[-1;\\,7]$'], 0, '$3+3x\\geq0\\Rightarrow x\\geq-1$; $x\\neq7$. Итого $[-1;7)\\cup(7;+\\infty)$'),
+      q('$y=\\sqrt{-7-x}-\\dfrac{5}{\\sqrt{x-2}}$', ['$\\varnothing$ (нет решений)','$x\\leq-7$','$x>2$','$[-7;\\,-2)$'], 0, '$-7-x\\geq0\\Rightarrow x\\leq-7$; $x-2>0\\Rightarrow x>2$. Условия несовместны — область определения пуста'),
+      q('$y=\\sqrt{\\dfrac{x-4}{2x+50}}$', ['$(-\\infty;-25)\\cup[4;+\\infty)$','$[4;+\\infty)$','$(-25;\\,4)$','$(-\\infty;-25]\\cup[4;+\\infty)$'], 0, '$\\frac{x-4}{2(x+25)}\\geq0$, $x\\neq-25$. Критические точки $-25$ и $4$: знак «$+$» при $x<-25$ и $x\\geq4$'),
+      q('$y=\\sqrt{\\dfrac{x+6}{x^2-2x}}$', ['$[-6;\\,0)\\cup(2;+\\infty)$','$(-6;0)\\cup(2;+\\infty)$','$[0;\\,2)$','$[-6;+\\infty)$'], 0, '$\\frac{x+6}{x(x-2)}\\geq0$, $x\\neq0,2$. Анализ знаков: $[-6;0)$ и $(2;+\\infty)$.'),
+      q('$y=\\sqrt{\\dfrac{x^2-4}{7-x}}$', ['$(-\\infty;-2]\\cup[2;\\,7)$','$[-2;\\,2]$','$(-\\infty;-2)\\cup(2;7)$','$[2;\\,7)$'], 0, '$\\frac{(x-2)(x+2)}{7-x}\\geq0$. Числитель $\\geq0$ при $|x|\\geq2$; знаменатель $>0$ при $x<7$.'),
+      q('$y=\\log_5(x^2-100)-16$', ['$(-\\infty;-10)\\cup(10;+\\infty)$','$(-10;10)$','$x>10$','$x\\neq\\pm10$'], 0, '$x^2-100>0\\Rightarrow|x|>10$'),
+      q('$y=\\ln\\dfrac{(10-x)(x^2+10)}{x^2-100}$', ['$(-\\infty;-10)$','$(-10;10)$','$(-\\infty;10)$','$(10;+\\infty)$'], 0, '$x^2+10>0$ всегда. $\\frac{(10-x)}{x^2-100}=\\frac{-(x-10)}{(x-10)(x+10)}=\\frac{-1}{x+10}$ при $x\\neq10$. Нужно $>0$: $x+10<0$, т.е. $x<-10$.'),
+      q('$y=\\log_9\\dfrac{3x+12x^2}{x+5}$', ['$(-5;-\\tfrac{1}{4})\\cup(0;+\\infty)$','$(0;+\\infty)$','$(-5;+\\infty)$','$(-\\tfrac{1}{4};0)$'], 0, '$\\frac{3x(1+4x)}{x+5}>0$. Нули: $x=-\\frac{1}{4}$, $x=0$, полюс $x=-5$. Знак «$+$»: $(-5;-\\frac{1}{4})$ и $(0;+\\infty)$.'),
+    ]
+  },
+
+  complex: {
+    title: 'Комплексные числа',
+    theory: '$i^2=-1,\\;i^3=-i,\\;i^4=1$<br><b>Сопряжённое:</b> $\\overline{a+bi}=a-bi$<br><b>Деление:</b> умножить числитель и знаменатель на сопряжённое знаменателя<br><b>Модуль:</b> $|a+bi|=\\sqrt{a^2+b^2}$',
+    qs: [
+      q('Выполните действия: $z=\\dfrac{5-6i}{i}$',
+        ['$-6-5i$','$-6+5i$','$6-5i$','$5+6i$'], 0,
+        'Умножить числитель и знаменатель на $(-i)$: $\\frac{(5-6i)(-i)}{i\\cdot(-i)}=\\frac{-5i+6i^2}{1}=\\frac{-6-5i}{1}=-6-5i$'),
+      q('Решите уравнение на множестве комплексных чисел: $x^2+121=0$',
+        ['$x=\\pm11i$','$x=\\pm11$','$x=11i$ (одно решение)','Решений нет'],0,
+        '$x^2=-121\\Rightarrow x=\\pm\\sqrt{-121}=\\pm11i$'),
+      q('Постройте вектор, соответствующий числу: $z=2i^{39}-5i^{114}$',
+        ['$5-2i$','$-5+2i$','$5+2i$','$-2-5i$'], 0,
+        '$i^{39}=i^{4\\cdot9+3}=i^3=-i$; $i^{114}=i^{4\\cdot28+2}=i^2=-1$. $z=2(-i)-5(-1)=5-2i$. Вектор: точка $(5;\\,-2)$'),
+      q('Постройте вектор, соответствующий числу: $z=2i^{6}-5i^{124}$',
+        ['$-7$','$-7+0i$ и $-7$','$7$','$-3$'], 0,
+        '$i^6=i^{4+2}=i^2=-1$; $i^{124}=i^{4\\cdot31}=1$. $z=2(-1)-5(1)=-7$. Вектор: точка $(-7;\\,0)$ на вещественной оси'),
+      q('Найдите число, сопряжённое данному: $z=(6-3i)^2$',
+        ['$27+36i$','$27-36i$','$-27+36i$','$45+36i$'], 0,
+        '$(6-3i)^2=36-36i+9i^2=36-36i-9=27-36i$. Сопряжённое: $\\overline{27-36i}=27+36i$'),
+      q('Вычислить: $z=(2+2i)(5-3i)$',
+        ['$16+4i$','$4+16i$','$16-4i$','$10+4i$'], 0,
+        '$10-6i+10i-6i^2=10+4i+6=16+4i$'),
+      q('Разложите на множители: $x^2+625$',
+        ['$(x-25i)(x+25i)$','$(x-25)(x+25)$','$(x+25i)^2$','Не раскладывается'],0,
+        '$x^2+625=x^2-(25i)^2=(x-25i)(x+25i)$, т.к. $(25i)^2=625i^2=-625$'),
+      q('Найдите мнимую часть числа: $z=\\dfrac{5-5i}{2+2i}$',
+        ['$-\\dfrac{5}{2}$','$\\dfrac{5}{2}$','$-5$','$0$'], 0,
+        'Умножим на $\\frac{2-2i}{2-2i}$: числитель $(5-5i)(2-2i)=-20i$, знаменатель $8$. $z=-\\frac{5i}{2}$, Im$=-\\frac{5}{2}$'),
+      q('Найдите действительную часть числа: $z=\\dfrac{2+2i}{2-2i}$',
+        ['$0$','$1$','$-1$','$\\dfrac{1}{2}$'], 0,
+        'Умножим на $\\frac{2+2i}{2+2i}$: числитель $(2+2i)^2=4+8i-4=8i$, знаменатель $8$. $z=i$, Re$(i)=0$'),
+      q('Найдите число, сопряжённое данному: $z=(5-4i)^2$',
+        ['$9+40i$','$9-40i$','$-9+40i$','$41+40i$'], 0,
+        '$(5-4i)^2=25-40i-16=9-40i$. Сопряжённое: $\\overline{9-40i}=9+40i$'),
+    ]
+  },
+
+  log: {
+    title: 'Логарифмические уравнения',
+    theory: '$\\log_a(xy)=\\log_a x+\\log_a y$<br>$\\log_a x^n=n\\log_a x$<br>$\\log_a x=\\log_a y\\Rightarrow x=y$<br><b>ОДЗ:</b> аргумент $>0$, основание $>0$ и $\\neq1$',
+    qs: [
+      q('$\\log_2 x=3$', ['$x=8$','$x=6$','$x=9$','$x=\\frac{3}{2}$'], 0, '$x=2^3=8$'),
+      q('$\\lg(x+2)=1$', ['$x=8$','$x=12$','$x=10$','$x=0$'], 0, '$x+2=10^1=10$, $x=8$'),
+      q('$\\log_3(2x-1)=2$', ['$x=5$','$x=4$','$x=\\frac{10}{3}$','$x=9$'], 0, '$2x-1=3^2=9$, $x=5$'),
+      q('$\\log_2 x+\\log_2(x-2)=3$', ['$x=4$','$x=3$','$x=4$ и $x=-2$','$x=2$'], 0, '$\\log_2[x(x-2)]=3\\Rightarrow x(x-2)=8\\Rightarrow x^2-2x-8=0$. $x=4$ ($x=-2$ не входит в ОДЗ)'),
+      q('$2\\log_3 x-\\log_3 9=0$', ['$x=3$','$x=9$','$x=1$','$x=\\sqrt{3}$'], 0, '$2\\log_3 x=2\\Rightarrow\\log_3 x=1\\Rightarrow x=3$'),
+      q('$\\log_5(x^2-4)=\\log_5 5$', ['$x=\\pm3$','$x=3$','$x=\\pm2$','$x=3$ только'], 0, '$x^2-4=5\\Rightarrow x^2=9\\Rightarrow x=\\pm3$. Оба подходят по ОДЗ'),
+      q('$\\log_4 x=-\\dfrac{1}{2}$', ['$x=\\dfrac{1}{2}$','$x=-2$','$x=\\dfrac{1}{8}$','$x=2$'], 0, '$x=4^{-1/2}=\\frac{1}{2}$'),
+      q('$\\lg(x^2-2x)=\\lg 3$', ['$x=-1$ и $x=3$','$x=3$','$x=-1$','$x=1$ и $x=-3$'], 0, 'ОДЗ: $x(x-2)>0$. $x^2-2x=3\\Rightarrow(x-3)(x+1)=0$. Оба $x=3$ и $x=-1$ удовлетворяют ОДЗ'),
+      q('$\\log_3^2 x-2\\log_3 x-3=0$', ['$x=27$ и $x=\\dfrac{1}{3}$','$x=27$','$x=\\dfrac{1}{3}$','$x=9$ и $x=\\dfrac{1}{3}$'], 0, 'Замена $t=\\log_3 x$: $t^2-2t-3=0$. $t=3\\Rightarrow x=27$; $t=-1\\Rightarrow x=\\frac{1}{3}$'),
+      q('$\\ln(x^2-6x+9)=\\ln 3+\\ln(x+3)$', ['$x=0$ и $x=9$','$x=9$','$x=0$','$x=3$ и $x=-3$'], 0, '$\\ln(x-3)^2=\\ln[3(x+3)]$. $(x-3)^2=3x+9\\Rightarrow x^2-9x=0$. Оба $x=0$ и $x=9$ подходят'),
+      q('$\\log_{\\frac{1}{2}} x+\\log_{\\frac{1}{2}}(x-1)=-1$', ['$x=2$','$x=1$','$x=\\dfrac{1}{2}$','$x=-1$ и $x=2$'], 0, '$\\log_{\\frac{1}{2}}[x(x-1)]=-1\\Rightarrow x(x-1)=2\\Rightarrow x=2$ (ОДЗ: $x>1$)'),
+      q('$\\log_2^2 x+\\log_2 x-2=0$', ['$x=2$ и $x=\\dfrac{1}{4}$','$x=2$','$x=4$ и $x=\\dfrac{1}{2}$','$x=\\dfrac{1}{4}$'], 0, 'Замена $t=\\log_2 x$: $t^2+t-2=0$. $t=1\\Rightarrow x=2$; $t=-2\\Rightarrow x=\\frac{1}{4}$'),
+      q('$\\log_3(x+2)+\\log_3 x=1$', ['$x=1$','$x=3$','$x=1$ и $x=-3$','$x=\\dfrac{1}{3}$'], 0, '$\\log_3[x(x+2)]=1\\Rightarrow x(x+2)=3\\Rightarrow x=1$ (ОДЗ: $x>0$)'),
+    ]
+  },
+
+  log_ineq: {
+    title: 'Логарифмические неравенства',
+    theory: 'При $a>1$: $\\log_a f(x)>\\log_a g(x)\\Rightarrow f(x)>g(x)$<br>При $0\\lt a\\lt 1$: знак неравенства <b>меняется</b><br><b>ОДЗ:</b> аргументы $>0$ обязательно!',
+    qs: [
+      q('Решите неравенство: $\\log_2 x>3$',
+        ['$(8;+\\infty)$','$(6;+\\infty)$','$(3;+\\infty)$','$(0;\\,8)$'],
+        0, 'ОДЗ: $x>0$. Основание $>1$: $x>2^3=8$. Ответ: $(8;+\\infty)$'),
+      q('Решите неравенство: $\\log_{0{,}5}x\\geq-2$',
+        ['$(0;\\,4]$','$[4;+\\infty)$','$(-\\infty;-2]$','$[-2;+\\infty)$'],
+        0, 'Основание $<1$: знак меняется. $x\\leq(0{,}5)^{-2}=4$ и ОДЗ $x>0$. Ответ: $(0;4]$'),
+      q('Решите неравенство: $\\lg(x-1)<2$',
+        ['$(1;\\,101)$','$(-\\infty;\\,101)$','$(-\\infty;\\,99)$','$(1;\\,101]$'],
+        0, 'ОДЗ: $x>1$. Основание $>1$: $x-1<100\\Rightarrow x<101$. Итого $(1;101)$'),
+      q('Решите неравенство: $\\log_3(2x-1)>1$',
+        ['$(2;+\\infty)$','$\\left(\\dfrac{1}{2};+\\infty\\right)$','$(3;+\\infty)$','$\\left(\\dfrac{3}{2};+\\infty\\right)$'],
+        0, 'ОДЗ: $x>\\frac{1}{2}$. Основание $>1$: $2x-1>3\\Rightarrow x>2$. Ответ: $(2;+\\infty)$'),
+      q('Решите неравенство: $\\log_2(x+3)\\leq4$',
+        ['$(-3;\\,13]$','$(-\\infty;\\,13]$','$(-\\infty;\\,-3)$','$[-3;\\,13]$'],
+        0, 'ОДЗ: $x>-3$. Основание $>1$: $x+3\\leq16\\Rightarrow x\\leq13$. Итого $(-3;13]$'),
+      q('Решите неравенство: $\\log_{\\frac{1}{3}}(x-1)<-1$',
+        ['$(4;+\\infty)$','$(1;+\\infty)$','$(1;\\,4)$','$(3;+\\infty)$'],
+        0, 'Основание $<1$: знак меняется. $x-1>\\left(\\frac{1}{3}\\right)^{-1}=3\\Rightarrow x>4$. ОДЗ $x>1$ выполнена. Ответ: $(4;+\\infty)$'),
+      q('Решите неравенство: $\\log_3(x+1)>2$',
+        ['$(8;+\\infty)$','$(2;+\\infty)$','$(9;+\\infty)$','$(-1;+\\infty)$'],
+        0, 'ОДЗ: $x>-1$. Основание $>1$: $x+1>9\\Rightarrow x>8$. Ответ: $(8;+\\infty)$'),
+      q('Решите неравенство: $\\log_2(x-5)\\geq3$',
+        ['$[13;+\\infty)$','$(5;+\\infty)$','$(8;+\\infty)$','$[8;+\\infty)$'],
+        0, 'ОДЗ: $x>5$. Основание $>1$: $x-5\\geq8\\Rightarrow x\\geq13$. Ответ: $[13;+\\infty)$'),
+      q('Решите неравенство: $\\log_{0{,}2}(3x-1)>-1$',
+        ['$\\left(\\dfrac{1}{3};\\,2\\right)$','$(-\\infty;\\,2)$','$\\left(\\dfrac{1}{3};+\\infty\\right)$','$(2;+\\infty)$'],
+        0, 'Основание $<1$: знак меняется. $3x-1<(0{,}2)^{-1}=5\\Rightarrow x<2$. ОДЗ: $x>\\frac{1}{3}$. Итого $\\left(\\frac{1}{3};2\\right)$'),
+      q('Решите неравенство: $\\log_5(x+4)\\leq2$',
+        ['$(-4;\\,21]$','$(-\\infty;\\,21]$','$(-\\infty;\\,25]$','$[-4;\\,21]$'],
+        0, 'ОДЗ: $x>-4$. Основание $>1$: $x+4\\leq25\\Rightarrow x\\leq21$. Итого $(-4;21]$'),
+      q('$\\log_{1{,}8}(9-2x) < 0$',
+        ['$(4;\\,4{,}5)$','$(-\\infty;\\,4)$','$(4;+\\infty)$','$(-\\infty;\\,4{,}5)$'],
+        0, 'Основание $>1$: $0<9-2x<1$ → $8<2x<9$ → $4<x<4{,}5$. Ответ: $(4;4{,}5)$'),
+      q('$\\log_{\\frac{1}{3}}(12-3x) > 0$',
+        ['$\\left(\\dfrac{11}{3};\\,4\\right)$','$(-\\infty;\\,4)$','$\\left(\\dfrac{11}{3};+\\infty\\right)$','$\\left(-\\infty;\\,\\dfrac{11}{3}\\right)$'],
+        0, 'Основание $<1$: $0<12-3x<1$ → $11<3x<12$ → $\\frac{11}{3}<x<4$. Ответ: $\\left(\\frac{11}{3};4\\right)$'),
+      q('$\\log_6(3x-5) \\leq 2$',
+        ['$\\left(\\dfrac{5}{3};\\,\\dfrac{41}{3}\\right]$','$\\left(-\\infty;\\,\\dfrac{41}{3}\\right]$','$\\left(\\dfrac{5}{3};+\\infty\\right)$','$\\left[\\dfrac{5}{3};\\,\\dfrac{41}{3}\\right]$'],
+        0, 'ОДЗ: $x>\\frac{5}{3}$. Основание $>1$: $3x-5\\leq36\\Rightarrow x\\leq\\frac{41}{3}$. Ответ: $\\left(\\frac{5}{3};\\frac{41}{3}\\right]$'),
+      q('$\\log_{13}(3-5x) > \\log_{13}(4x+2)$',
+        ['$\\left(-\\dfrac{1}{2};\\,\\dfrac{1}{9}\\right)$','$\\left(-\\infty;\\,\\dfrac{1}{9}\\right)$','$\\left(-\\dfrac{1}{2};+\\infty\\right)$','$\\left(-\\infty;\\,\\dfrac{1}{2}\\right)$'],
+        0, 'Основание $>1$: $3-5x>4x+2\\Rightarrow x<\\frac{1}{9}$. ОДЗ: $x>-\\frac{1}{2}$ и $x<\\frac{3}{5}$. Ответ: $\\left(-\\frac{1}{2};\\frac{1}{9}\\right)$'),
+    ]
+  },
+
+  trig: {
+    title: 'Тригонометрические уравнения',
+    theory: '$\\sin x=a\\Rightarrow x=(-1)^n\\arcsin a+\\pi n$, $n\\in\\mathbb{Z}$<br>$\\cos x=a\\Rightarrow x=\\pm\\arccos a+2\\pi n$, $n\\in\\mathbb{Z}$<br>$\\operatorname{tg} x=a\\Rightarrow x=\\operatorname{arctg} a+\\pi n$, $n\\in\\mathbb{Z}$<br>Частные случаи: $\\sin x=0\\Rightarrow x=\\pi n$; $\\cos x=0\\Rightarrow x=\\frac{\\pi}{2}+\\pi n$',
+    qs: [
+      q('$\\sin x=0$',
+        ['$x=\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{2}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=2\\pi n,\\;n\\in\\mathbb{Z}$','$x=0$'],
+        0, 'Стандартная формула: $\\sin x=0\\Rightarrow x=\\pi n,\\;n\\in\\mathbb{Z}$'),
+      q('$\\cos x=1$',
+        ['$x=2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pi n,\\;n\\in\\mathbb{Z}$','$x=0$','$x=\\dfrac{\\pi}{2}+2\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, '$\\arccos1=0$, формула $x=\\pm0+2\\pi n=2\\pi n,\\;n\\in\\mathbb{Z}$'),
+      q('$2\\sin x-\\sqrt{2}=0$',
+        ['$x=\\dfrac{\\pi}{4}+2\\pi n$ и $x=\\dfrac{3\\pi}{4}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}$','$x=\\dfrac{3\\pi}{4}+2\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, '$\\sin x=\\frac{\\sqrt{2}}{2}$: два значения в $[0;2\\pi)$ — $\\frac{\\pi}{4}$ и $\\frac{3\\pi}{4}$'),
+      q('$\\operatorname{tg} x=1$',
+        ['$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=1+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}$'],
+        0, '$\\operatorname{arctg}1=\\frac{\\pi}{4}$, период тангенса $\\pi$'),
+      q('$2\\cos^2 x-1=0$',
+        ['$x=\\pm\\dfrac{\\pi}{4}+\\dfrac{\\pi n}{2},\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pm\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{2}+\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, '$\\cos^2x=\\frac{1}{2}\\Rightarrow|\\cos x|=\\frac{1}{\\sqrt{2}}\\Rightarrow x=\\pm\\frac{\\pi}{4}+\\frac{\\pi n}{2},\\;n\\in\\mathbb{Z}$'),
+      q('$\\sqrt{3}\\operatorname{tg} x+1=0$',
+        ['$x=-\\dfrac{\\pi}{6}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{6}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=-\\dfrac{\\pi}{3}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{5\\pi}{6}+\\pi n,\\;n\\in\\mathbb{Z}$'],
+        [0,3], '$\\operatorname{tg} x=-\\frac{1}{\\sqrt{3}}$, $\\operatorname{arctg}(-\\frac{1}{\\sqrt{3}})=-\\frac{\\pi}{6}$. Оба ответа верны: $-\\frac{\\pi}{6}+\\pi n$ и $\\frac{5\\pi}{6}+\\pi n$ — одно и то же множество'),
+      q('$\\sin 2x=0$',
+        ['$x=\\dfrac{\\pi n}{2},\\;n\\in\\mathbb{Z}$','$x=\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\dfrac{\\pi n}{2},\\;n\\in\\mathbb{Z}$','$x=2\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, '$2x=\\pi n\\Rightarrow x=\\frac{\\pi n}{2},\\;n\\in\\mathbb{Z}$'),
+      q('$\\cos\\!\\left(x+\\dfrac{\\pi}{3}\\right)=0$',
+        ['$x=\\dfrac{\\pi}{6}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{2}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=-\\dfrac{\\pi}{6}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{3}+\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, '$x+\\frac{\\pi}{3}=\\frac{\\pi}{2}+\\pi n\\Rightarrow x=\\frac{\\pi}{6}+\\pi n,\\;n\\in\\mathbb{Z}$'),
+      q('$2\\sin^2 x-\\sin x=0$',
+        ['$x=\\pi n$ и $x=\\dfrac{\\pi}{6}+2\\pi n$ и $x=\\dfrac{5\\pi}{6}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{6}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=0$'],
+        0, '$\\sin x(2\\sin x-1)=0$: $\\sin x=0$ или $\\sin x=\\frac{1}{2}$'),
+      q('$\\cos x=-\\dfrac{\\sqrt{3}}{2}$',
+        ['$x=\\pm\\dfrac{5\\pi}{6}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pm\\dfrac{\\pi}{6}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{5\\pi}{6}+2\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{7\\pi}{6}+2\\pi n,\\;n\\in\\mathbb{Z}$'],
+        [0,3], '$\\arccos(-\\frac{\\sqrt{3}}{2})=\\frac{5\\pi}{6}$. Оба варианта [А] и [Г] верны: $\\frac{7\\pi}{6}+2\\pi n = -\\frac{5\\pi}{6}+2\\pi n$ — одно и то же множество'),
+      q('$5\\sin^2 x+2\\sin x\\cos x-3\\cos^2 x=2$',
+        ['$x=\\dfrac{\\pi}{4}+\\pi n$ или $x=\\operatorname{arctg}\\!\\left(-\\dfrac{5}{3}\\right)+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\operatorname{arctg}\\!\\left(-\\dfrac{5}{3}\\right)+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pm\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, 'Вычтем $2(\\sin^2x+\\cos^2x)$: $3\\operatorname{tg}^2x+2\\operatorname{tg}x-5=0\\Rightarrow(3\\operatorname{tg}x+5)(\\operatorname{tg}x-1)=0$'),
+      q('$\\operatorname{tg}(7\\pi-x)+3\\operatorname{tg} x+2=0$',
+        ['$x=-\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=-\\dfrac{\\pi}{3}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pi n,\\;n\\in\\mathbb{Z}$'],
+        0, '$\\operatorname{tg}(7\\pi-x)=\\operatorname{tg}(-x)=-\\operatorname{tg}x$. Уравнение: $2\\operatorname{tg}x+2=0\\Rightarrow\\operatorname{tg}x=-1$'),
+      q('$\\sin 5x=\\sin x$',
+        ['$x=\\dfrac{\\pi n}{2}$ или $x=\\dfrac{\\pi}{6}+\\dfrac{\\pi n}{3},\\;n\\in\\mathbb{Z}$','$x=\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi n}{2},\\;n\\in\\mathbb{Z}$'],
+        0, 'Случай 1: $5x=x+2\\pi n\\Rightarrow x=\\frac{\\pi n}{2}$. Случай 2: $5x=\\pi-x+2\\pi n\\Rightarrow x=\\frac{\\pi}{6}+\\frac{\\pi n}{3}$'),
+      q('$3\\cos^2(4x)+5\\cos(4x)+2=0$',
+        ['$x=\\dfrac{\\pi}{4}+\\dfrac{\\pi n}{2}$ или $x=\\pm\\dfrac{\\arccos(-\\frac{2}{3})}{4}+\\dfrac{\\pi n}{2},\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{4}+\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\pi n,\\;n\\in\\mathbb{Z}$','$x=\\dfrac{\\pi}{8}+\\dfrac{\\pi n}{2},\\;n\\in\\mathbb{Z}$'],
+        0, 'Замена $t=\\cos(4x)$: $3t^2+5t+2=0\\Rightarrow t=-1$ или $t=-\\frac{2}{3}$. $\\cos(4x)=-1\\Rightarrow x=\\frac{\\pi}{4}+\\frac{\\pi n}{2}$'),
+    ]
+  },
+
+  exp: {
+    title: 'Показательные уравнения',
+    theory: 'Замена $t=a^x$ ($t>0$), решите уравнение относительно $t$.<br>$a^x=a^y\\Rightarrow x=y$<br>Вынести $a^x$ за скобку: $a^x(\\ldots)=c$',
+    qs: [
+      q('$2^x=8$', ['$x=3$','$x=4$','$x=2$','$x=\\frac{8}{2}$'], 0, '$2^x=2^3$'),
+      q('$3^{x+1}=27$', ['$x=2$','$x=3$','$x=1$','$x=9$'], 0, '$3^{x+1}=3^3$, $x+1=3$'),
+      q('$4^x-5\\cdot2^x+4=0$', ['$x=0$ и $x=2$','$x=2$','$x=1$ и $x=2$','$x=0$'], 0, 'Замена $t=2^x$: $t^2-5t+4=0$, $t=1\\Rightarrow x=0$ или $t=4\\Rightarrow x=2$'),
+      q('$5^{2x}-6\\cdot5^x+5=0$', ['$x=0$ и $x=1$','$x=1$','$x=5$','$x=0$'], 0, 'Замена $t=5^x$: $t^2-6t+5=0$, $t=1$ или $t=5$'),
+      q('$2^{x+1}+2^x=3$', ['$x=0$','$x=1$','$x=\\frac{1}{2}$','$x=3$'], 0, '$2^x(2+1)=3$, $2^x=1$, $x=0$'),
+      q('$9^x-4\\cdot3^x-45=0$', ['$x=2$','$x=-2$','$x=\\log_39$','нет решений'], 0, 'Замена $t=3^x$: $t^2-4t-45=0$, $t=9\\Rightarrow x=2$'),
+      q('$2\\cdot4^x-9\\cdot2^x+4=0$', ['$x=-1$ и $x=2$','$x=2$','$x=-1$','$x=1$ и $x=-2$'], 0, 'Замена $t=2^x$: $2t^2-9t+4=0$, $t=4\\Rightarrow x=2$, $t=\\frac{1}{2}\\Rightarrow x=-1$'),
+      q('$2^{2x+1}+2^{x+2}=16$', ['$x=1$','$x=2$','$x=0$','$x=\\dfrac{1}{2}$'], 0, 'Замена $t=2^x$: $2t^2+4t-16=0\\Rightarrow(t+4)(t-2)=0$, $t=2\\Rightarrow x=1$'),
+      q('$7\\cdot5^x-5^{x+1}=2\\cdot5^3$', ['$x=3$','$x=2$','$x=1$','$x=4$'], 0, '$2\\cdot5^x=250\\Rightarrow5^x=125\\Rightarrow x=3$'),
+      q('$7^{x-1}=7^x-6$', ['$x=1$','$x=2$','$x=0$','$x=7$'], 0, '$7^x\\cdot\\frac{6}{7}=6\\Rightarrow7^x=7\\Rightarrow x=1$'),
+      q('$6^{10x}-6^{10x-1}=5$', ['$x=\\dfrac{1}{10}$','$x=1$','$x=\\dfrac{1}{6}$','$x=\\dfrac{1}{5}$'], 0, '$6^{10x}\\cdot\\frac{5}{6}=5\\Rightarrow6^{10x}=6\\Rightarrow x=\\frac{1}{10}$'),
+      q('$4^x+4^{x+1}=5$', ['$x=0$','$x=1$','$x=\\dfrac{1}{2}$','$x=2$'], 0, '$4^x(1+4)=5\\Rightarrow4^x=1\\Rightarrow x=0$'),
+      q('$16^x-4^x-12=0$', ['$x=1$','$x=2$','$x=\\dfrac{1}{2}$','$x=4$'], 0, 'Замена $t=4^x$: $t^2-t-12=0$, $t=4\\Rightarrow x=1$'),
+      q('$25^x+5^x-30=0$', ['$x=1$','$x=2$','$x=0$','$x=\\dfrac{3}{2}$'], 0, 'Замена $t=5^x$: $t^2+t-30=0$, $t=5\\Rightarrow x=1$'),
+      q('$9^x-3^x-6=0$', ['$x=1$','$x=2$','$x=0$','$x=\\dfrac{1}{2}$'], 0, 'Замена $t=3^x$: $t^2-t-6=0$, $t=3\\Rightarrow x=1$'),
+      q('$5^{x+1}-3\\cdot5^{x-2}=122$', ['$x=2$','$x=3$','$x=1$','$x=4$'], 0, '$5^x\\cdot\\frac{122}{25}=122\\Rightarrow5^x=25\\Rightarrow x=2$'),
+      q('$7^{12x}-7^{12x-1}=6$', ['$x=\\dfrac{1}{12}$','$x=1$','$x=\\dfrac{1}{6}$','$x=\\dfrac{1}{7}$'], 0, '$7^{12x}\\cdot\\frac{6}{7}=6\\Rightarrow7^{12x}=7\\Rightarrow x=\\frac{1}{12}$'),
+    ]
+  },
+
+  exp_ineq: {
+    title: 'Показательные неравенства',
+    theory: 'Если основания равны: $a^x > a^y$<br>при $a > 1$: знак <b>сохраняется</b> → $x > y$<br>при $0 < a < 1$: знак <b>меняется</b> → $x < y$',
+    qs: [
+      q('Решите неравенство: $2^x>16$',
+        ['$(4;+\\infty)$','$(8;+\\infty)$','$[4;+\\infty)$','$(-\\infty;4)$'],
+        0, '$2^x>2^4$, основание $>1$: $x>4$. Ответ: $(4;+\\infty)$'),
+      q('Решите неравенство: $\\left(\\dfrac{1}{3}\\right)^x\\leq9$',
+        ['$[-2;+\\infty)$','$(-\\infty;-2]$','$[2;+\\infty)$','$(-\\infty;2]$'],
+        0, '$3^{-x}\\leq3^2$, $-x\\leq2$, $x\\geq-2$. Ответ: $[-2;+\\infty)$'),
+      q('Решите неравенство: $3^{2x-1}<27$',
+        ['$(-\\infty;2)$','$(2;+\\infty)$','$\\left(-\\infty;\\dfrac{3}{2}\\right)$','$(-\\infty;2]$'],
+        0, '$3^{2x-1}<3^3$, $2x-1<3$, $x<2$. Ответ: $(-\\infty;2)$'),
+      q('$\\left(\\dfrac{3}{4}\\right)^{x^2} \\leq \\left(\\dfrac{3}{4}\\right)^{5x}$',
+        ['$(-\\infty;0]\\cup[5;+\\infty)$','$[0;5]$','$[5;+\\infty)$','$(-\\infty;0]$'],
+        0, 'Основание $<1$ → знак меняется: $x^2\\geq5x$ → $x(x-5)\\geq0$. Ответ: $(-\\infty;0]\\cup[5;+\\infty)$'),
+      q('$\\left(\\dfrac{2}{5}\\right)^{3x} \\geq \\left(\\dfrac{2}{5}\\right)^{25}$',
+        ['$\\left(-\\infty;\\dfrac{25}{3}\\right]$','$\\left[\\dfrac{25}{3};+\\infty\\right)$','$(-\\infty;25]$','$[25;+\\infty)$'],
+        0, 'Основание $<1$ → знак меняется: $3x\\leq25$ → $x\\leq\\frac{25}{3}$. Ответ: $\\left(-\\infty;\\frac{25}{3}\\right]$'),
+      q('$\\left(\\dfrac{3}{4}\\right)^{-4x} > \\left(\\dfrac{3}{4}\\right)^{16}$',
+        ['$(-4;+\\infty)$','$(-\\infty;-4)$','$(4;+\\infty)$','$(-\\infty;4)$'],
+        0, 'Основание $<1$ → знак меняется: $-4x<16$ → $x>-4$. Ответ: $(-4;+\\infty)$'),
+      q('$\\left(\\dfrac{1}{25}\\right)^{5x+1} > \\left(\\dfrac{1}{25}\\right)^{-3}$',
+        ['$\\left(-\\infty;-\\dfrac{4}{5}\\right)$','$\\left(-\\dfrac{4}{5};+\\infty\\right)$','$\\left(-\\infty;\\dfrac{4}{5}\\right)$','$\\left(\\dfrac{4}{5};+\\infty\\right)$'],
+        0, 'Основание $<1$ → знак меняется: $5x+1<-3$ → $x<-\\frac{4}{5}$. Ответ: $\\left(-\\infty;-\\frac{4}{5}\\right)$'),
+      q('$0{,}3^{x^2-9x} \\leq 0{,}3^0$',
+        ['$[0;9]$','$[0;+\\infty)$','$(-\\infty;0]\\cup[9;+\\infty)$','$(-\\infty;9]$'],
+        2, 'Основание $0{,}3<1$ → знак меняется: $x^2-9x\\geq0\\Rightarrow x(x-9)\\geq0$. Ответ: $(-\\infty;0]\\cup[9;+\\infty)$'),
+      q('$5^x < 625$',
+        ['$(-\\infty;4)$','$(-\\infty;4]$','$(-\\infty;5)$','$(4;+\\infty)$'],
+        0, '$5^x<5^4$, основание $>1$: $x<4$. Ответ: $(-\\infty;4)$'),
+      q('$\\left(0{,}4\\right)^{2x-1} \\leq \\left(0{,}4\\right)^3$',
+        ['$[2;+\\infty)$','$(-\\infty;2]$','$(2;+\\infty)$','$(-\\infty;2)$'],
+        0, 'Основание $0{,}4<1$ → знак меняется: $2x-1\\geq3$ → $x\\geq2$. Ответ: $[2;+\\infty)$'),
+    ]
+  },
+
+  vectors: {
+    title: 'Векторы',
+    theory: '$\\vec{AB}=B-A$<br><b>Скал. произведение (2D):</b> $\\vec{a}\\cdot\\vec{b}=a_1b_1+a_2b_2$<br><b>Скал. произведение (3D):</b> $\\vec{a}\\cdot\\vec{b}=a_1b_1+a_2b_2+a_3b_3$<br><b>Модуль:</b> $|\\vec{a}|=\\sqrt{a_1^2+a_2^2+a_3^2}$<br><b>Перпендикулярность:</b> $\\vec{a}\\cdot\\vec{b}=0$<br><b>Коллинеарность:</b> $\\vec{a}=\\lambda\\vec{b}$ (координаты пропорциональны)',
+    qs: [
+      q('Найти скалярное произведение $\\overrightarrow{CD}$ и $\\vec{j}$, если $C(-3;\\,5)$ и $D(5;\\,-7)$.',
+        ['$-12$','$12$','$8$','$-8$'], 0,
+        '$\\overrightarrow{CD}=(5{-}({-3});\\,-7{-}5)=(8;{-12})$. $\\vec{j}=(0;1)$. Скалярное: $8{\\cdot}0+({-12}){\\cdot}1=-12$'),
+      q('Даны векторы: $\\vec{a}\\{3;{-2};5\\}$ и $\\vec{b}\\{{-2};9;0\\}$. Найти $|\\vec{a}-\\vec{b}|$.',
+        ['$3\\sqrt{19}$','$\\sqrt{19}$','$\\sqrt{147}$','$9$'], 0,
+        '$\\vec{a}-\\vec{b}=(5;{-11};5)$. $|\\vec{a}-\\vec{b}|=\\sqrt{25+121+25}=\\sqrt{171}=3\\sqrt{19}$'),
+      q('Найти координаты и длину вектора $\\overrightarrow{AB}$, если $A(5;{-2})$ и $B(6;10)$.',
+        ['$\\overrightarrow{AB}=(1;12),\\;|\\overrightarrow{AB}|=\\sqrt{145}$',
+         '$\\overrightarrow{AB}=(1;12),\\;|\\overrightarrow{AB}|=13$',
+         '$\\overrightarrow{AB}=(11;8),\\;|\\overrightarrow{AB}|=\\sqrt{145}$',
+         '$\\overrightarrow{AB}=(1;12),\\;|\\overrightarrow{AB}|=\\sqrt{265}$'], 0,
+        '$\\overrightarrow{AB}=(6{-}5;\\,10{-}({-2}))=(1;12)$. $|\\overrightarrow{AB}|=\\sqrt{1+144}=\\sqrt{145}$'),
+      q('Найти $5\\vec{a}-3\\vec{b}$; $\\vec{a}+4\\vec{b}$, если $\\vec{a}\\{2;3\\}$; $\\vec{b}\\{8;{-3}\\}$.',
+        ['$5\\vec{a}-3\\vec{b}=(-14;24),\\;\\vec{a}+4\\vec{b}=(34;{-9})$',
+         '$5\\vec{a}-3\\vec{b}=(-14;24),\\;\\vec{a}+4\\vec{b}=(34;9)$',
+         '$5\\vec{a}-3\\vec{b}=(14;{-24}),\\;\\vec{a}+4\\vec{b}=(34;{-9})$',
+         '$5\\vec{a}-3\\vec{b}=(-14;24),\\;\\vec{a}+4\\vec{b}=(10;0)$'], 0,
+        '$5(2;3)-3(8;{-3})=(10;15)-(24;{-9})=(-14;24)$. $(2;3)+4(8;{-3})=(2;3)+(32;{-12})=(34;{-9})$'),
+      q('При каком значении $z$ векторы $\\vec{a}\\{5;1;3\\}$ и $\\vec{b}\\{{-2};10;z\\}$ перпендикулярны?',
+        ['$z=0$','$z=1$','$z=-1$','$z=3$'], 0,
+        '$\\vec{a}\\cdot\\vec{b}=0$: $5{\\cdot}({-2})+1{\\cdot}10+3z=-10+10+3z=3z=0\\Rightarrow z=0$'),
+      q('Даны векторы $\\vec{a}\\{{-1};6;4\\}$ и $\\vec{b}\\{1;x;{-3}\\}$. При каком значении $x$ выполняется условие $\\vec{a}\\perp\\vec{b}$?',
+        ['$x=\\dfrac{13}{6}$','$x=2$','$x=-\\dfrac{13}{6}$','$x=\\dfrac{6}{13}$'], 0,
+        '$\\vec{a}\\cdot\\vec{b}=0$: $({-1}){\\cdot}1+6x+4{\\cdot}({-3})=-1+6x-12=0\\Rightarrow6x=13\\Rightarrow x=\\frac{13}{6}$'),
+      q('Векторы $\\vec{k}$ и $\\vec{n}$ коллинеарны. Вычислить абсциссу вектора $\\vec{n}$, если его ордината $-1$ и $\\vec{k}=2\\vec{i}-4\\vec{j}$.',
+        ['$\\dfrac{1}{2}$','$2$','$-\\dfrac{1}{2}$','$-2$'], 0,
+        '$\\vec{k}=(2;{-4})$, $\\vec{n}=(x;{-1})$. Коллинеарность: $x/2=({-1})/({-4})=1/4\\Rightarrow x=1/2$'),
+      q('Даны векторы $\\vec{a}\\{{-5};2\\}$ и $\\vec{b}\\{2;{-5}\\}$. Вычислить $4\\vec{a}+2\\vec{b}$.',
+        ['$({-16};{-2})$','$(16;2)$','$({-14};{-2})$','$({-16};2)$'], 0,
+        '$4({-5};2)=({-20};8)$; $2(2;{-5})=(4;{-10})$. Сумма: $({-20}+4;\\,8{-10})=({-16};{-2})$'),
+      q('Векторы $\\vec{a}$ и $\\vec{b}$ перпендикулярны: $\\vec{a}\\{{-5};2y\\}$ и $\\vec{b}\\{{-9};1\\}$. Найти $y$.',
+        ['$y=-\\dfrac{45}{2}$','$y=\\dfrac{45}{2}$','$y=5$','$y=-5$'], 0,
+        '$\\vec{a}\\cdot\\vec{b}=0$: $({-5}){\\cdot}({-9})+2y{\\cdot}1=45+2y=0\\Rightarrow y=-\\frac{45}{2}$'),
+      q('При каком значении $\\alpha$ векторы $\\vec{a}\\{{-4};3;{-4}\\}$ и $\\vec{b}\\{\\alpha;{-6};8\\}$ коллинеарны?',
+        ['$\\alpha=8$','$\\alpha=-8$','$\\alpha=2$','$\\alpha=-2$'], 0,
+        'Пропорциональность: $\\frac{-4}{\\alpha}=\\frac{3}{-6}=\\frac{-4}{8}=-\\frac{1}{2}$. Из $\\frac{-4}{\\alpha}=-\\frac{1}{2}\\Rightarrow\\alpha=8$'),
+    ]
+  },
+
+  stereo: {
+    title: 'Стереометрия',
+    theory: '<b>Конус:</b> $V=\\frac{1}{3}\\pi r^2h$, $S_{бок}=\\pi rl$<br><b>Цилиндр:</b> $V=\\pi r^2h$, $S_{бок}=2\\pi rh$<br><b>Пирамида:</b> $V=\\frac{1}{3}S_{осн}h$<br><b>Шар:</b> $S=4\\pi R^2$<br><b>Диагональ парал-да:</b> $d=\\sqrt{a^2+b^2+c^2}$',
+    qs: [
+      q('Осевое сечение конуса — правильный треугольник со стороной $10$ см. Найдите объём конуса.',
+        ['$\\dfrac{125\\pi\\sqrt{3}}{3}$ см³','$\\dfrac{125\\pi}{3}$ см³','$250\\pi\\sqrt{3}$ см³','$25\\pi\\sqrt{3}$ см³'], 0,
+        'Образующая $l=10$, $r=5$. $h=\\sqrt{100-25}=5\\sqrt{3}$. $V=\\frac{1}{3}\\pi\\cdot25\\cdot5\\sqrt{3}=\\frac{125\\pi\\sqrt{3}}{3}$'),
+      q('Измерения прямоугольного параллелепипеда $1$ см, $2$ см и $3$ см. Найдите длину его диагонали.',
+        ['$\\sqrt{14}$ см','$6$ см','$\\sqrt{6}$ см','$\\sqrt{13}$ см'], 0,
+        '$d=\\sqrt{1^2+2^2+3^2}=\\sqrt{1+4+9}=\\sqrt{14}$'),
+      q('Объём куба равен $343$ см³. Найдите площадь его поверхности.',
+        ['$294$ см²','$49$ см²','$147$ см²','$196$ см²'], 0,
+        '$a=\\sqrt[3]{343}=7$. $S=6a^2=6\\cdot49=294$ см²'),
+      q('Три ребра прямоугольного параллелепипеда, выходящие из одной вершины, равны $1$; $0{,}5$ и $16$. Найдите ребро равновеликого ему куба.',
+        ['$2$ см','$4$ см','$8$ см','$\\sqrt[3]{16}$ см'], 0,
+        '$V=1\\cdot0{,}5\\cdot16=8$ см³. $a=\\sqrt[3]{8}=2$ см'),
+      q('В правильной четырёхугольной призме площадь основания равна $100$ см², высота $12$ см. Найдите площадь диагонального сечения призмы.',
+        ['$120\\sqrt{2}$ см²','$120$ см²','$240$ см²','$60\\sqrt{2}$ см²'], 0,
+        '$a^2=100\\Rightarrow a=10$. Диагональ основания $d=10\\sqrt{2}$. Диагональное сечение — прямоугольник: $S=10\\sqrt{2}\\cdot12=120\\sqrt{2}$ см²'),
+      q('В правильной треугольной пирамиде $SABC$ биссектрисы $\\triangle ABC$ пересекаются в точке $O$. $S_{ABC}=2$, $V=6$. Найдите длину $OS$.',
+        ['$9$','$3$','$6$','$4$'], 0,
+        '$V=\\frac{1}{3}S_{осн}\\cdot h=\\frac{1}{3}\\cdot2\\cdot h=6\\Rightarrow h=9$. Так как пирамида правильная, $S$ проецируется в центр основания $O$, значит $OS=h=9$'),
+      q('Площадь боковой поверхности цилиндра $36\\pi$ см², высота $4$ см. Найдите диаметр основания.',
+        ['$9$ см','$4{,}5$ см','$18$ см','$6$ см'], 0,
+        '$S_{бок}=2\\pi rh=36\\pi\\Rightarrow 2r\\cdot4=36\\Rightarrow r=4{,}5\\Rightarrow d=9$ см'),
+      q('В правильной треугольной призме сторона основания $6$ см, диагональ боковой грани $10$ см. Найдите площадь боковой поверхности.',
+        ['$144$ см²','$72$ см²','$96$ см²','$216$ см²'], 0,
+        'Боковая грань $6\\times h$: $\\sqrt{36+h^2}=10\\Rightarrow h=8$. $S_{бок}=3\\cdot6\\cdot8=144$ см²'),
+      q('Высота конуса равна $12$, образующая равна $15$. Найдите объём конуса, делённый на $\\pi$.',
+        ['$324$','$108$','$540$','$180$'], 0,
+        '$r=\\sqrt{15^2-12^2}=\\sqrt{81}=9$. $V=\\frac{1}{3}\\pi\\cdot81\\cdot12=324\\pi$. $V/\\pi=324$'),
+      q('Радиусы двух шаров равны $7$ и $24$. Найдите радиус шара, площадь поверхности которого равна сумме площадей поверхностей этих двух шаров.',
+        ['$25$','$31$','$17$','$\\sqrt{625}=25$'], 0,
+        '$4\\pi R^2=4\\pi(7^2+24^2)=4\\pi(49+576)=4\\pi\\cdot625\\Rightarrow R=25$'),
+    ]
+  },
+
+  deriv: {
+    title: 'Производные',
+    theory: '$(x^n)\'=nx^{n-1}$, $(e^x)\'=e^x$, $(\\ln x)\'=\\frac{1}{x}$<br>$(\\sin x)\'=\\cos x$, $(\\cos x)\'=-\\sin x$<br>$(\\operatorname{tg} x)\'=\\frac{1}{\\cos^2 x}$<br><b>Произведение:</b> $(uv)\'=u\'v+uv\'$',
+    qs: [
+      q('$f(x)=x^5-3x^2+7$. Найдите $f\'(x)$', ['$5x^4-6x$','$5x^4-6$','$5x^4+6x$','$x^4-6x$'], 0, 'Дифференцируем каждый член'),
+      q('$f(x)=\\sin x+\\cos x$. Найдите $f\'(x)$', ['$\\cos x-\\sin x$','$\\cos x+\\sin x$','$-\\sin x-\\cos x$','$-\\cos x+\\sin x$'], 0, 'Стандартные правила таблицы'),
+      q('$f(x)=e^x\\cdot x^2$. Найдите $f\'(x)$', ['$e^x(x^2+2x)$','$2xe^x$','$e^x\\cdot2x$','$x^2e^x+2$'], 0, 'Правило произведения: $(e^x)\'x^2+e^x(x^2)\'=e^x x^2+2xe^x=e^x(x^2+2x)$'),
+      q('$f(x)=\\ln x+3\\sqrt{x}$. Найдите $f\'(x)$', ['$\\dfrac{1}{x}+\\dfrac{3}{2\\sqrt{x}}$','$\\dfrac{1}{x}+\\dfrac{3}{\\sqrt{x}}$','$x+\\dfrac{3}{\\sqrt{x}}$','$\\ln x+\\dfrac{3}{2}x^{-1/2}$'], 0, '$\\sqrt{x}=x^{1/2}$, $(x^{1/2})\'=\\frac{1}{2}x^{-1/2}$'),
+      q('$f(x)=3x^2+5x-2$. Найдите $f\'(0)$', ['$5$','$0$','$-2$','$6$'], 0, "$f'(x)=6x+5$, $f'(0)=5$"),
+      q('$f(x)=\\sin x$. Найдите $f\'(\\pi)$', ['$-1$','$1$','$0$','$\\pi$'], 0, "$f'(x)=\\cos x$, $\\cos\\pi=-1$"),
+      q('$f(x)=\\operatorname{tg} x-x$. Найдите $f\'(x)$', ['$\\operatorname{tg}^2 x$','$\\dfrac{1}{\\cos^2 x}-1$','$\\operatorname{tg}^2 x+1$','$\\dfrac{1}{\\cos^2 x}+1$'], 0, "$f'=\\frac{1}{\\cos^2 x}-1=\\frac{1-\\cos^2 x}{\\cos^2 x}=\\frac{\\sin^2 x}{\\cos^2 x}=\\operatorname{tg}^2 x$"),
+      q('$f(x)=x\\ln x$. Найдите $f\'(1)$', ['$1$','$0$','$\\ln1$','$2$'], 0, "$f'(x)=\\ln x+1$, $f'(1)=0+1=1$"),
+      q('$f(x)=\\dfrac{x^2+1}{x}$. Найдите $f\'(x)$', ['$1-\\dfrac{1}{x^2}$','$1+\\dfrac{1}{x^2}$','$\\dfrac{2x}{x}$','$\\dfrac{1}{x^2}$'], 0, 'Упростите: $x+x^{-1}$, тогда $1-x^{-2}=1-\\frac{1}{x^2}$'),
+      q('$f(x)=2^x$. Найдите $f\'(x)$', ['$2^x\\ln2$','$x\\cdot2^{x-1}$','$2^x$','$\\dfrac{2^x}{\\ln2}$'], 0, '$(a^x)\'=a^x\\ln a$'),
+      q('$f(x)=\\operatorname{arcctg}x+\\dfrac{6x}{3x-1}$. Найдите $f\'(0)$', ['$-7$','$7$','$-1$','$5$'], 0, "$f'(x)=-\\frac{1}{1+x^2}+\\frac{6(3x-1)-18x}{(3x-1)^2}=-\\frac{1}{1+x^2}+\\frac{-6}{(3x-1)^2}$. $f'(0)=-1+(-6)=-7$"),
+      q('$f(x)=\\dfrac{\\sin x}{3}-\\dfrac{x^2}{4}$. Найдите $f\'(0)$', ['$\\dfrac{1}{3}$','$-\\dfrac{1}{4}$','$0$','$1$'], 0, "$f'(x)=\\frac{\\cos x}{3}-\\frac{x}{2}$. $f'(0)=\\frac{1}{3}-0=\\frac{1}{3}$"),
+      q('$f(x)=5\\cos x+5$. Найдите $f\'\\!\\left(\\dfrac{\\pi}{2}\\right)$', ['$-5$','$5$','$0$','$-1$'], 0, "$f'(x)=-5\\sin x$. $f'\\left(\\frac{\\pi}{2}\\right)=-5\\cdot1=-5$"),
+      q('$f(x)=\\dfrac{10x}{1+x^2}+3x^3$. Найдите $f\'(1)$', ['$9$','$12$','$5$','$4$'], 0, "$f'=\\frac{10(1-x^2)}{(1+x^2)^2}+9x^2$. $f'(1)=\\frac{0}{4}+9=9$"),
+      q('$f(x)=2\\operatorname{tg} x+3\\sin x$. Найдите $f\'(0)$', ['$5$','$2$','$3$','$1$'], 0, "$f'(x)=\\frac{2}{\\cos^2 x}+3\\cos x$. $f'(0)=2+3=5$"),
+      q('$f(x)=\\dfrac{5x-8}{x^2+1}$. Найдите $f\'(0)$', ['$5$','$-8$','$-5$','$0$'], 0, "$f'=\\frac{5(x^2+1)-(5x-8)\\cdot2x}{(x^2+1)^2}=\\frac{-5x^2+16x+5}{(x^2+1)^2}$. $f'(0)=\\frac{5}{1}=5$"),
+      q('$f(x)=\\dfrac{x}{x+1}+\\sin x$. Найдите $f\'(0)$', ['$2$','$1$','$\\dfrac{1}{2}$','$0$'], 0, "$f'=\\frac{1}{(x+1)^2}+\\cos x$. $f'(0)=1+1=2$"),
+    ]
+  },
+
+  integral: {
+    title: 'Интегралы',
+    theory: '$\\int x^n dx=\\dfrac{x^{n+1}}{n+1}+C$&ensp;($n\\neq-1$)<br>$\\int\\frac{1}{x}dx=\\ln|x|+C$<br>$\\int e^x dx=e^x+C$<br>$\\int\\sin x\\,dx=-\\cos x+C$<br>$\\int\\cos x\\,dx=\\sin x+C$',
+    qs: [
+      q('$\\displaystyle\\int(3x^2+2x)\\,dx$', ['$x^3+x^2+C$','$x^3+2x^2+C$','$6x+2+C$','$x^3+x+C$'], 0, '$\\int3x^2=x^3$, $\\int2x=x^2$'),
+      q('$\\displaystyle\\int x^4\\,dx$', ['$\\dfrac{x^5}{5}+C$','$4x^3+C$','$x^5+C$','$\\dfrac{x^5}{4}+C$'], 0, 'Степень $+1$, делим на новую степень'),
+      q('$\\displaystyle\\int\\dfrac{1}{x^2}\\,dx$', ['$-\\dfrac{1}{x}+C$','$\\dfrac{1}{x}+C$','$\\dfrac{2}{x^3}+C$','$\\ln x^2+C$'], 0, '$x^{-2}$: $\\frac{x^{-1}}{-1}=-\\frac{1}{x}$'),
+      q('$\\displaystyle\\int(\\sin x+\\cos x)\\,dx$', ['$-\\cos x+\\sin x+C$','$\\cos x-\\sin x+C$','$-\\cos x-\\sin x+C$','$\\sin x-\\cos x+C$'], 0, '$\\int\\sin x=-\\cos x$, $\\int\\cos x=\\sin x$'),
+      q('$\\displaystyle\\int e^x\\,dx$', ['$e^x+C$','$xe^x+C$','$\\dfrac{e^x}{x}+C$','$e^{x+1}+C$'], 0, 'Интеграл $e^x$ равен себе'),
+      q('$\\displaystyle\\int\\sqrt{x}\\,dx$', ['$\\dfrac{2x^{3/2}}{3}+C$','$\\dfrac{x^{3/2}}{3}+C$','$\\dfrac{1}{2\\sqrt{x}}+C$','$2\\sqrt{x}+C$'], 0, '$\\sqrt{x}=x^{1/2}$, $\\frac{x^{3/2}}{3/2}=\\frac{2}{3}x^{3/2}$'),
+      q('$\\displaystyle\\int\\dfrac{1}{x}\\,dx$', ['$\\ln|x|+C$','$-\\dfrac{1}{x^2}+C$','$x^{-2}+C$','$\\dfrac{1}{x^2}+C$'], 0, 'Табличный интеграл'),
+      q('$\\displaystyle\\int(5x^4-3x+1)\\,dx$', ['$x^5-\\dfrac{3x^2}{2}+x+C$','$20x^3-3+C$','$x^5-3x^2+x+C$','$5x^5-3x^2+x+C$'], 0, 'Каждый член: $5x^4\\to x^5$, $3x\\to\\frac{3x^2}{2}$, $1\\to x$'),
+      q('$\\displaystyle\\int 2e^x\\,dx$', ['$2e^x+C$','$2e^{x+1}+C$','$e^x+C$','$2xe^x+C$'], 0, 'Константа выносится: $2\\int e^x=2e^x$'),
+      q('$\\displaystyle\\int\\left(x^2-\\dfrac{1}{x^3}\\right)dx$', ['$\\dfrac{x^3}{3}+\\dfrac{1}{2x^2}+C$','$\\dfrac{x^3}{3}-\\dfrac{1}{2x^2}+C$','$2x-\\dfrac{3}{x^4}+C$','$\\dfrac{x^3}{3}+\\dfrac{1}{x^3}+C$'], 0, '$x^{-3}\\to\\frac{x^{-2}}{-2}=-\\frac{1}{2x^2}$; минус минус = плюс'),
+      q('$\\displaystyle\\int\\left(8x^3-\\dfrac{3x}{5}+20\\right)dx$', ['$2x^4-\\dfrac{3x^2}{10}+20x+C$','$2x^4-\\dfrac{3x^2}{5}+20x+C$','$24x^2-\\dfrac{3}{5}+C$','$8x^4-\\dfrac{3x^2}{5}+20x+C$'], 0, '$\\int8x^3=2x^4$; $\\int\\frac{3x}{5}=\\frac{3x^2}{10}$; $\\int20=20x$'),
+      q('$\\displaystyle\\int\\left(10x^4+\\dfrac{x}{3}+18\\right)dx$', ['$2x^5+\\dfrac{x^2}{6}+18x+C$','$2x^5+\\dfrac{x^2}{3}+18x+C$','$40x^3+\\dfrac{1}{3}+C$','$10x^5+\\dfrac{x^2}{6}+18x+C$'], 0, '$\\int10x^4=2x^5$; $\\int\\frac{x}{3}=\\frac{x^2}{6}$; $\\int18=18x$'),
+      q('$\\displaystyle\\int(4x^3-6x+14)\\,dx$', ['$x^4-3x^2+14x+C$','$x^4-6x^2+14x+C$','$12x^2-6+C$','$4x^4-3x^2+14x+C$'], 0, '$\\int4x^3=x^4$; $\\int6x=3x^2$; $\\int14=14x$'),
+      q('$\\displaystyle\\int\\left(\\dfrac{1}{\\cos^2 x}+e^x+\\dfrac{5}{\\sqrt{x}}\\right)dx$', ['$\\operatorname{tg}x+e^x+10\\sqrt{x}+C$','$\\operatorname{tg}x+e^x+5\\sqrt{x}+C$','$\\operatorname{tg}^2x+e^x+10\\sqrt{x}+C$','$\\dfrac{\\sin x}{\\cos^3 x}+e^x+\\dfrac{5}{2\\sqrt{x}}+C$'], 0, '$\\int\\frac{1}{\\cos^2x}=\\operatorname{tg}x$; $\\int e^x=e^x$; $\\int5x^{-1/2}=10\\sqrt{x}$'),
+      q('$\\displaystyle\\int\\left(12x^2+\\dfrac{1}{x^2}-\\dfrac{7}{x}\\right)dx$', ['$4x^3-\\dfrac{1}{x}-7\\ln|x|+C$','$4x^3+\\dfrac{1}{x}-7\\ln|x|+C$','$24x-\\dfrac{2}{x^3}-\\dfrac{7}{x^2}+C$','$12x^3-\\dfrac{1}{x}-7\\ln|x|+C$'], 0, '$\\int12x^2=4x^3$; $\\int x^{-2}=-x^{-1}$; $\\int\\frac{7}{x}=7\\ln|x|$'),
+      q('$\\displaystyle\\int\\left(7x+\\dfrac{7}{x}-\\dfrac{7}{x^2}\\right)dx$', ['$\\dfrac{7x^2}{2}+7\\ln|x|+\\dfrac{7}{x}+C$','$\\dfrac{7x^2}{2}+7\\ln|x|-\\dfrac{7}{x}+C$','$7+\\dfrac{7}{x^2}+\\dfrac{14}{x^3}+C$','$7x^2+7\\ln|x|+\\dfrac{7}{x}+C$'], 0, '$\\int7x=\\frac{7x^2}{2}$; $\\int\\frac{7}{x}=7\\ln|x|$; $\\int(-7x^{-2})=7x^{-1}=\\frac{7}{x}$'),
+    ]
+  },
+
+  stepenn: {
+    title: 'Степенная функция — уравнения',
+    theory: 'Шаги: 1) найти ОДЗ, 2) возвести обе части в квадрат, 3) решить полученное уравнение, 4) <b>проверить корни</b> в исходном уравнении.<br>Если правая часть отрицательна — решений нет (левая часть ≥ 0).',
+    qs: [
+      q('$\\sqrt{3x-1} = 1-3x$',
+        ['$x=\\dfrac{1}{3}$','$x=0$','$x=1$','Нет решений'],
+        0, 'ОДЗ: $3x-1\\geq0$ и $1-3x\\geq0$ → $x=\\frac{1}{3}$. Проверка: $\\sqrt{0}=0$ ✓'),
+      q('$\\sqrt{2x+3} = -3-2x$',
+        ['$x=-\\dfrac{3}{2}$','$x=\\dfrac{3}{2}$','$x=0$','Нет решений'],
+        0, 'ОДЗ: $2x+3\\geq0$ и $-3-2x\\geq0$ → $x=-\\frac{3}{2}$. Проверка: $\\sqrt{0}=0$ ✓'),
+      q('$\\sqrt{4x+1} = x-1$',
+        ['$x=6$','$x=0$ и $x=6$','$x=0$','$x=2+\\sqrt{7}$'],
+        0, 'Возводим: $4x+1=(x-1)^2=x^2-2x+1$ → $x^2-6x=0$ → $x=0$ или $x=6$. Проверка: $x=0$: $1\\neq-1$. $x=6$: $5=5$ ✓'),
+      q('$\\sqrt{2x-1} = 1-2x$',
+        ['$x=\\dfrac{1}{2}$','$x=0$','$x=\\dfrac{1}{4}$','Нет решений'],
+        0, 'ОДЗ: $2x-1\\geq0$ и $1-2x\\geq0$ → $x=\\frac{1}{2}$'),
+      q('$x - 5\\sqrt{x} + 4 = 0$',
+        ['$x=1$ и $x=16$','$x=1$','$x=16$','$x=4$'],
+        0, 'Замена $t=\\sqrt{x}\\geq0$: $t^2-5t+4=0$ → $t=1$ или $t=4$ → $x=1$ или $x=16$'),
+      q('$x + \\sqrt{x-2} = 0$',
+        ['Нет решений','$x=2$','$x=1$','$x=-1$'],
+        0, 'ОДЗ: $x\\geq2$, но тогда $x+\\sqrt{x-2}\\geq2>0$ — не равно нулю'),
+      q('$\\sqrt{x^2+x-11} = 1$',
+        ['$x=3$ и $x=-4$','$x=3$','$x=-4$','$x=\\pm3$'],
+        0, '$x^2+x-11=1$ → $x^2+x-12=0$ → $(x-3)(x+4)=0$. Оба подходят ✓'),
+      q('$\\sqrt{4x+3} = \\sqrt{x^2+x-1}$',
+        ['$x=4$','$x=-1$ и $x=4$','$x=-1$','$x=2$'],
+        0, 'Возводим: $4x+3=x^2+x-1$ → $x^2-3x-4=0$ → $x=4$ или $x=-1$. Проверка: $x=-1$: $\\sqrt{-1}$ — ОДЗ нарушена. $x=4$ ✓'),
+      q('$\\sqrt{4x+1} = \\sqrt{x^2+3x-1}$',
+        ['$x=2$','$x=-1$ и $x=2$','$x=-1$','$x=4$'],
+        0, '$4x+1=x^2+3x-1$ → $x^2-x-2=0$ → $x=2$ или $x=-1$. Проверка: $x=-1$: $\\sqrt{-3}$ — ОДЗ нарушена'),
+      q('$\\sqrt{4x+3} = x$',
+        ['$x=2+\\sqrt{7}$','$x=3$','$x=2$','$x=2\\pm\\sqrt{7}$'],
+        0, 'Нужно $x\\geq0$. Возводим: $4x+3=x^2$ → $x^2-4x-3=0$ → $x=2\\pm\\sqrt{7}$. Только $x=2+\\sqrt{7}>0$'),
+      q('$\\sqrt{2x+3} = x$',
+        ['$x=3$','$x=-1$ и $x=3$','$x=1$','$x=-1$'], 0,
+        'ОДЗ: $x\\geq0$. Возводим: $2x+3=x^2\\Rightarrow x^2-2x-3=0\\Rightarrow(x-3)(x+1)=0$. $x=3$ ✓; $x=-1$ не подходит ($x\\geq0$)'),
+      q('$x+\\sqrt{x}-2=0$',
+        ['$x=1$','$x=1$ и $x=4$','$x=4$','Нет решений'], 0,
+        'Замена $t=\\sqrt{x}\\geq0$: $t^2+t-2=0\\Rightarrow(t+2)(t-1)=0$. $t=1\\Rightarrow x=1$. Проверка: $1+1-2=0$ ✓'),
+    ]
+  },
+
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let current = null;   // { title, qs, theory? }
+let answers = [];     // selected option index per question, or null
+let shuffled = [];    // shuffled options per question: [{opts, correctOpts[]}]
+let katexReady = false;
+const renderQueue = [];
+
+function onKatexReady() {
+  katexReady = true;
+  renderQueue.forEach(el => doRender(el));
+  renderQueue.length = 0;
+  doRender(document.body);
+}
+
+function doRender(el) {
+  renderMathInElement(el, {
+    delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+    throwOnError: false
+  });
+}
+function renderIn(el) {
+  if (katexReady) doRender(el);
+  else renderQueue.push(el);
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function goHome() {
+  show('screen-home');
+}
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function startExam(id) {
+  const e = EXAMS[id];
+  load(e.title, e.qs, null);
+}
+function startTopic(id) {
+  const t = TOPICS[id];
+  load(t.title, t.qs, t.theory);
+}
+
+const TOPIC_META = {
+  domain:  { icon: '🔢' },
+  complex: { icon: '🔷' },
+  log:     { icon: '📊' },
+  log_ineq:{ icon: '📉' },
+  trig:    { icon: '〰️' },
+  exp:     { icon: '📈' },
+  exp_ineq:{ icon: '📊' },
+  vectors: { icon: '➡️' },
+  stereo:  { icon: '🔺' },
+  deriv:   { icon: '📉' },
+  integral:{ icon: '∫'  },
+  stepenn: { icon: '√'  },
+};
+
+(function buildTopicCards() {
+  const container = document.getElementById('topic-cards');
+  Object.entries(TOPICS).forEach(([id, t]) => {
+    const icon = (TOPIC_META[id] || {}).icon || '📘';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.onclick = () => startTopic(id);
+    card.innerHTML =
+      '<div class="card-icon">' + icon + '</div>' +
+      '<div class="card-title">' + t.title + '</div>' +
+      '<div class="card-sub">' + t.qs.length + ' заданий</div>';
+    container.appendChild(card);
+  });
+})();
+
+function load(title, qs, theory) {
+  current = { title, qs, theory };
+  answers = qs.map(() => null);
+
+  // shuffle options for each question
+  shuffled = qs.map(q => {
+    const indices = [0,1,2,3];
+    // Fisher-Yates
+    for (let i = 3; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i+1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const opts = indices.map(i => q.options[i]);
+    // support single index or array of indices
+    const correctIndices = Array.isArray(q.correct) ? q.correct : [q.correct];
+    const correctOpts = correctIndices.map(ci => q.options[ci]);
+    return { opts, correctOpts };
+  });
+
+  document.getElementById('exam-title').textContent = title;
+  renderQuestions();
+  show('screen-exam');
+}
+
+function renderQuestions() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+
+  if (current.theory) {
+    const box = document.createElement('div');
+    box.className = 'theory-box';
+    box.innerHTML = current.theory;
+    container.appendChild(box);
+    renderIn(box);
+  }
+
+  current.qs.forEach((q, qi) => {
+    const block = document.createElement('div');
+    block.className = 'question-block';
+    block.id = `block_${qi}`;
+
+    const letters = ['А','Б','В','Г'];
+    const optsHtml = shuffled[qi].opts.map((opt, oi) => `
+      <button class="option-btn" id="opt_${qi}_${oi}" onclick="select(${qi},${oi})">
+        <span class="option-letter">${letters[oi]}</span>
+        <span>${opt}</span>
+      </button>`).join('');
+
+    block.innerHTML = `
+      <div class="question-num">Задание ${qi + 1}</div>
+      <div class="question-text">${q.text}</div>
+      <div class="options-grid">${optsHtml}</div>
+      <div class="q-actions">
+        <button class="hint-btn" id="hintbtn_${qi}" onclick="showHint(${qi})">💡 Подсказка</button>
+      </div>
+      <div class="q-feedback" id="fb_${qi}"></div>`;
+
+    container.appendChild(block);
+    renderIn(block);
+  });
+
+  updateProgress();
+}
+
+function select(qi, oi) {
+  const btn = document.getElementById(`opt_${qi}_${oi}`);
+  if (btn.classList.contains('locked')) return;
+
+  for (let i = 0; i < 4; i++) {
+    const b = document.getElementById(`opt_${qi}_${i}`);
+    if (b) b.classList.remove('selected');
+  }
+  btn.classList.add('selected');
+  answers[qi] = oi;
+  updateProgress();
+  checkOne(qi); // мгновенная проверка
+}
+
+function showHint(qi) {
+  const fb = document.getElementById(`fb_${qi}`);
+  fb.className = 'q-feedback show-hint';
+  fb.innerHTML = `💡 <b>Подсказка:</b> ${current.qs[qi].hint}`;
+  renderIn(fb);
+}
+
+function checkOne(qi) {
+  if (answers[qi] === null) return;
+  const fb = document.getElementById(`fb_${qi}`);
+  const block = document.getElementById(`block_${qi}`);
+  const chosenOpt = shuffled[qi].opts[answers[qi]];
+  const correctOpts = shuffled[qi].correctOpts;
+  const ok = correctOpts.includes(chosenOpt);
+
+  // Lock all options
+  for (let i = 0; i < 4; i++) {
+    const b = document.getElementById(`opt_${qi}_${i}`);
+    if (!b) continue;
+    b.classList.add('locked');
+    const isCorrectBtn = correctOpts.includes(shuffled[qi].opts[i]);
+    const isSelected = i === answers[qi];
+    if (isCorrectBtn) { b.classList.add('correct'); b.classList.remove('selected'); }
+    else if (isSelected && !ok) { b.classList.add('wrong'); }
+    else if (!isCorrectBtn && !isSelected) { b.classList.add('dim'); }
+  }
+
+  block.classList.add(ok ? 'answered-ok' : 'answered-fail');
+  if (ok) {
+    fb.className = 'q-feedback show-ok';
+    fb.textContent = '✅ Правильно!';
+  } else {
+    const correctStr = correctOpts.join(' или ');
+    fb.className = 'q-feedback show-fail';
+    fb.innerHTML = `❌ Неверно. Правильный ответ: <b>${correctStr}</b>`;
+    renderIn(fb);
+  }
+
+  document.getElementById(`hintbtn_${qi}`).style.display = 'none';
+}
+
+function checkAll() {
+  answers.forEach((a, qi) => { if (a !== null) checkOne(qi); });
+}
+
+function updateProgress() {
+  const done = answers.filter(a => a !== null).length;
+  const total = current.qs.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done}/${total}`;
+}
+
+function showResults() {
+  // Check all remaining
+  checkAll();
+
+  let correct = 0;
+  const review = [];
+  current.qs.forEach((q, qi) => {
+    const sel = answers[qi];
+    const chosenOpt = sel !== null ? shuffled[qi].opts[sel] : null;
+    const correctOpts = shuffled[qi].correctOpts;
+    const ok = chosenOpt !== null && correctOpts.includes(chosenOpt);
+    if (ok) correct++;
+    review.push({ q, ok, chosenOpt, correctOpts, qi });
+  });
+
+  const total = current.qs.length;
+  const pct = Math.round(correct/total*100);
+  let grade, cls;
+  if (pct >= 90) { grade = '5 — Отлично'; cls = 'grade-5'; }
+  else if (pct >= 70) { grade = '4 — Хорошо'; cls = 'grade-4'; }
+  else if (pct >= 50) { grade = '3 — Удовлетворительно'; cls = 'grade-3'; }
+  else { grade = '2 — Надо повторить'; cls = 'grade-2'; }
+
+  document.getElementById('result-score').textContent = `${correct}/${total}`;
+  document.getElementById('result-label').textContent = `правильных ответов · ${pct}%`;
+  const g = document.getElementById('result-grade');
+  g.textContent = `Оценка: ${grade}`;
+  g.className = `result-grade ${cls}`;
+
+  const rev = document.getElementById('answers-review');
+  rev.innerHTML = '<h3 style="margin-bottom:12px">Разбор</h3>';
+  review.forEach(({ q, ok, chosenOpt, correctOpts }) => {
+    const correctStr = correctOpts.join(' или ');
+    const div = document.createElement('div');
+    div.className = `review-item ${ok ? 'ok' : 'fail'}`;
+    div.innerHTML = `
+      <div class="review-icon">${ok ? '✅' : '❌'}</div>
+      <div class="review-text">
+        <b>${q.text}</b><br>
+        ${chosenOpt ? `Ваш ответ: ${chosenOpt}${!ok ? '<br>Правильно: <b>'+correctStr+'</b>' : ''}` : '<i>Нет ответа.</i> Правильно: <b>'+correctStr+'</b>'}
+      </div>`;
+    rev.appendChild(div);
+    renderIn(div);
+  });
+
+  show('screen-results');
+  renderIn(document.getElementById('result-grade').parentElement);
+}
+
+function retryExam() {
+  answers = current.qs.map(() => null);
+  shuffled = current.qs.map(q => {
+    const indices = [0,1,2,3];
+    for (let i = 3; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i+1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const opts = indices.map(i => q.options[i]);
+    const correctIndices = Array.isArray(q.correct) ? q.correct : [q.correct];
+    const correctOpts = correctIndices.map(ci => q.options[ci]);
+    return { opts, correctOpts };
+  });
+  renderQuestions();
+  show('screen-exam');
+}
+
+// ═══════════════════════════════════════
+// THEORY ACCORDION DATA
+// ═══════════════════════════════════════
+const THEORY_TOPICS = [
+  {
+    icon: '📏',
+    title: '1. Метод интервалов для решения неравенств',
+    body: `
+      <p><b>Опр.</b> Неравенством называется два математических выражения, соединённых одним из знаков: &gt; (больше), &lt; (меньше), ≤ (меньше или равно), ≥ (больше или равно).</p>
+      <p>Метод интервалов предназначен для решения неравенств вида $f(x) > 0\\ (\\geq)$, $f(x) < 0\\ (\\leq)$.</p>
+      <h4>Алгоритм решения неравенства с помощью метода интервала</h4>
+      <ol class="step-list">
+        <li>Решить уравнение $f(x) = 0$.</li>
+        <li>Отметить все полученные корни на координатной прямой.</li>
+        <li>Выбрать в каждом из промежутков какое-нибудь значение и определить знак выражения в этой точке.</li>
+        <li>Выбрать промежутки, в которых выражение имеет требуемый знак, и записать ответ.</li>
+      </ol>
+    `
+  },
+  {
+    icon: '√',
+    title: '2. Иррациональные уравнения. Алгоритм решения',
+    body: `
+      <p><b>Опр.</b> Уравнение с одной неизвестной $f(x) = g(x)$ называется <b>иррациональным уравнением</b>, если хотя бы одна из функций $f(x)$ или $g(x)$ содержит переменную $x$ под знаком радикала (корня).</p>
+      <h4>Основные случаи</h4>
+      <div class="formula-block">
+        <b>А)</b> $\\sqrt{f(x)} = g(x) \\Leftrightarrow \\begin{cases} f(x) = g^2(x) \\\\ g(x) \\geq 0 \\end{cases}$<br><br>
+        <em>Условие $g(x) \\geq 0$ не является лишним — его нужно проверять!</em>
+      </div>
+      <div class="example-box">
+        <b>Пример:</b> $\\sqrt{3+x} = 3-x$<br>
+        $\\Leftrightarrow \\begin{cases} 3+x = (3-x)^2 \\\\ 3-x \\geq 0 \\end{cases}$<br>
+        Решаем: $3+x = x^2 - 6x + 9$, корни $x_1 = 6,\\ x_2 = 1$.<br>
+        Условие $x \\leq 3$: $x = 6$ не подходит. <b>Ответ: $x = 1$.</b>
+      </div>
+      <div class="formula-block">
+        <b>Б)</b> $\\sqrt{f(x)} = \\sqrt{g(x)} \\Leftrightarrow \\begin{cases} f(x) = g(x) \\\\ f(x) \\geq 0 \\end{cases}$<br><br>
+        <em>Условие для второй функции писать не обязательно — оно выполняется автоматически.</em>
+      </div>
+      <div class="example-box">
+        <b>Пример:</b> $\\sqrt{x^2+x-1} = \\sqrt{x}$<br>
+        $\\Leftrightarrow \\begin{cases} x^2+x-1 = x \\\\ x \\geq 0 \\end{cases}$<br>
+        Корни: $x_{1,2} = \\pm 1$. Корень $x = -1$ не подходит. <b>Ответ: $x = 1$.</b>
+      </div>
+    `
+  },
+  {
+    icon: '〰️',
+    title: '3. Чётность и нечётность тригонометрических функций. Формулы приведения',
+    body: `
+      <p><b>Опр.</b> Функция $f(x)$ называется <b>чётной</b>, если:<br>
+      А) $D(f)$ симметрична относительно начала отсчёта — точки $O$;<br>
+      Б) для любого $x \\in D(f)$: $f(-x) = f(x)$.</p>
+      <p><b>Опр.</b> Функция $f(x)$ называется <b>нечётной</b>, если:<br>
+      А) $D(f)$ симметрична относительно начала отсчёта — точки $O$;<br>
+      Б) для любого $x \\in D(f)$: $f(-x) = -f(x)$.</p>
+      <div class="formula-block">
+        $\\sin x,\\ \\operatorname{tg} x,\\ \\operatorname{ctg} x$ — нечётные функции<br>
+        $\\cos x$ — единственная чётная функция $\\;(\\cos(-x) = \\cos x)$
+      </div>
+      <div class="example-box">
+        $\\cos(-45°) = \\cos 45° = \\dfrac{\\sqrt{2}}{2}$&emsp;
+        $\\sin(-45°) = -\\sin 45° = -\\dfrac{\\sqrt{2}}{2}$
+      </div>
+      <h4>Формулы приведения</h4>
+      <p>Формулы приведения — это соотношения, которые позволяют перейти от тригонометрических функций с углами $\\dfrac{\\pi}{2} \\pm \\alpha$, $\\pi \\pm \\alpha$, $\\dfrac{3\\pi}{2} \\pm \\alpha$, $2\\pi \\pm \\alpha$ к тем же функциям угла $\\alpha$, который находится в первой четверти.</p>
+      <h4>Правила</h4>
+      <ol class="step-list">
+        <li>В правой части ставится тот знак, который имеет левая часть при условии $0 &lt; \\alpha &lt; \\dfrac{\\pi}{2}$.</li>
+        <li>Если в левой части находится угол $\\dfrac{\\pi}{2} \\pm \\alpha$ или $\\dfrac{3\\pi}{2} \\pm \\alpha$, то синус меняется на косинус, косинус — на синус, тангенс — на котангенс, котангенс — на тангенс.</li>
+      </ol>
+      <div class="example-box">
+        1. $\\cos\\!\\left(\\dfrac{\\pi}{2} + \\alpha\\right) = -\\sin\\alpha$&emsp;&emsp;
+        2. $\\operatorname{tg}(\\pi - \\alpha) = -\\operatorname{tg}\\alpha$
+      </div>
+    `
+  },
+  {
+    icon: '🔺',
+    title: '4. Основные понятия и аксиомы стереометрии',
+    body: `
+      <p><b>Основные неопределяемые понятия:</b> точка, прямая, плоскость (новое понятие).</p>
+      <div class="formula-block">
+        <b>Аксиома 1.</b> Через любые три точки, не лежащие на одной прямой, проходит плоскость и притом только одна.
+      </div>
+      <div class="formula-block">
+        <b>Аксиома 2.</b> Если две точки прямой лежат в плоскости, то и вся прямая лежит в этой плоскости.
+      </div>
+      <div class="formula-block">
+        <b>Аксиома 3.</b> Если две плоскости имеют общую точку, то они имеют общую прямую, на которой лежат все общие точки этих плоскостей.
+      </div>
+    `
+  },
+  {
+    icon: '📊',
+    title: '5. Определение логарифма. Свойства логарифмов. Десятичные и натуральные логарифмы. Основное логарифмическое тождество',
+    body: `
+      <p><b>Опр.</b> <b>Логарифмом</b> положительного числа $b$ по основанию $a$, где $a > 0$ и $a \\neq 1$, называется показатель степени, в которую надо возвести число $a$, чтобы получить $b$.</p>
+      <div class="formula-block">
+        $\\log_a b = c \\Leftrightarrow a^c = b$ &emsp; ($a > 0,\\ a \\neq 1,\\ b > 0$)
+      </div>
+      <h4>Основное логарифмическое тождество</h4>
+      <div class="formula-block">
+        $a^{\\log_a b} = b$
+      </div>
+      <h4>Свойства логарифмов</h4>
+      <p>$a > 0,\\ a \\neq 1,\\ x > 0,\\ y > 0,\\ r \\in \\mathbb{R}$</p>
+      <div class="formula-block">
+        1. $\\log_a(xy) = \\log_a x + \\log_a y$<br>
+        2. $\\log_a\\dfrac{x}{y} = \\log_a x - \\log_a y$<br>
+        3. $\\log_a(x^r) = r \\cdot \\log_a x$<br>
+        4. $\\log_{a^n} x = \\dfrac{1}{n} \\cdot \\log_a x$<br>
+        5. (формула перехода к другому основанию) $\\log_a x = \\dfrac{\\log_c x}{\\log_c a}$<br>
+        5*. $\\log_a x = \\dfrac{1}{\\log_x a}$
+      </div>
+      <div class="formula-block">
+        <b>Натуральный логарифм:</b> $\\ln x = \\log_e x$<br>
+        <b>Десятичный логарифм:</b> $\\lg x = \\log_{10} x$
+      </div>
+    `
+  },
+  {
+    icon: '∫',
+    title: '6. Определённый интеграл. Свойства. Формула Ньютона–Лейбница',
+    body: `
+      <p>Пусть функция $f(x)$ непрерывна на отрезке $[a;\\ b]$.</p>
+      <ol class="step-list">
+        <li>Разбиваем отрезок $[a;\\ b]$ на $n$ равных частей.</li>
+        <li>Составляем сумму $S_n = f(x_0)\\Delta x_0 + f(x_1)\\Delta x_1 + \\ldots + f(x_{n-1})\\Delta x_{n-1}$.</li>
+        <li>Вычисляем $\\lim_{n \\to \\infty} S_n$.</li>
+      </ol>
+      <p>Этот предел, если функция непрерывна или кусочно-непрерывна, существует. Его называют <b>определённым интегралом</b> от функции $y = f(x)$ по отрезку $[a;\\ b]$ и обозначают $\\displaystyle\\int_a^b f(x)\\,dx$.</p>
+      <h4>Теорема (Формула Ньютона–Лейбница)</h4>
+      <p>Если функция $y = f(x)$ непрерывна на отрезке $[a;\\ b]$, то справедлива формула:</p>
+      <div class="formula-block">
+        $\\displaystyle\\int_a^b f(x)\\,dx = F(b) - F(a)$,<br>
+        где $F(x)$ — первообразная для $f(x)$.
+      </div>
+      <h4>Свойства</h4>
+      <div class="formula-block">
+        1. Интеграл от суммы функций равен сумме интегралов:<br>
+        $\\displaystyle\\int_a^b [f(x) + g(x)]\\,dx = \\int_a^b f(x)\\,dx + \\int_a^b g(x)\\,dx$<br><br>
+        2. Постоянный множитель можно вынести за знак интеграла:<br>
+        $\\displaystyle\\int_a^b c \\cdot f(x)\\,dx = c \\cdot \\int_a^b f(x)\\,dx$
+      </div>
+    `
+  },
+  {
+    icon: '📉',
+    title: '7. Производная. Определение производной',
+    body: `
+      <div class="formula-block">
+        $\\Delta x = x_1 - x_0$ — <b>приращение аргумента</b><br>
+        $\\Delta y = f(x_1) - f(x_0) = f(x_0 + \\Delta x) - f(x_0)$ — <b>приращение функции</b>
+      </div>
+      <p><b>Опр.</b> <b>Производной</b> функции $y = f(x)$ в точке $x_0$ называется предел отношения приращения функции к приращению аргумента при стремлении приращения аргумента к нулю:</p>
+      <div class="formula-block">
+        $f'(x_0) = \\lim_{\\Delta x \\to 0} \\dfrac{\\Delta y}{\\Delta x} = \\lim_{\\Delta x \\to 0} \\dfrac{f(x_0 + \\Delta x) - f(x_0)}{\\Delta x}$
+      </div>
+      <p><em>(Производной функции на промежутке является функция.)</em></p>
+    `
+  },
+  {
+    icon: '🔢',
+    title: '8. Правило четырёх шагов для определения производной',
+    body: `
+      <ol class="step-list">
+        <li>Зафиксировать значение $x$, найти $f(x)$. Дать аргументу $x$ приращение $\\Delta x$, найти $f(x + \\Delta x)$.</li>
+        <li>Найти приращение функции: $\\Delta y = f(x + \\Delta x) - f(x)$.</li>
+        <li>Составить отношение $\\dfrac{\\Delta y}{\\Delta x}$.</li>
+        <li>Вычислить $\\lim_{\\Delta x \\to 0} \\dfrac{\\Delta y}{\\Delta x}$. Этот предел и есть $f'(x)$.</li>
+      </ol>
+    `
+  },
+  {
+    icon: '🔁',
+    title: '9. Определение числовой последовательности. Предел числовой последовательности',
+    body: `
+      <p><b>Опр.</b> <b>Числовой последовательностью</b> называется функция $a: \\mathbb{N} \\to \\mathbb{R}$ (функция, которая каждому натуральному числу ставит в соответствие вещественное число). Обозначение: $(a_n)$.</p>
+      <h4>Способы задания</h4>
+      <div class="formula-block">
+        <b>1. Словесный</b> (последовательность простых чисел):<br>
+        $2, 3, 5, 7, 11, 13, 17, 19, 23, \\ldots$<br><br>
+        <b>2. Аналитический</b> (формула):<br>
+        $a_n = n^2 + 4$: $\\ \\ 5, 8, 13, 20, 29, \\ldots$<br><br>
+        <b>3. Рекуррентный</b> (через предыдущие члены):<br>
+        $a_1 = a_2 = 1,\\ a_{n+2} = a_{n+1} + a_n$: $\\ \\ 1, 1, 2, 3, 5, 8, 13, \\ldots$
+      </div>
+      <p><b>Опр.</b> Число $A \\in \\mathbb{R}$ называется <b>пределом последовательности</b> $(a_n)$, если</p>
+      <div class="formula-block">
+        $\\forall \\varepsilon > 0 \\; \\exists N \\in \\mathbb{N} \\; \\forall n > N:\\; |a_n - A| < \\varepsilon$<br>
+        Обозначается $\\lim_{n \\to \\infty} a_n = A$.
+      </div>
+      <div class="example-box">
+        <b>Пример:</b> $\\lim_{n \\to \\infty} \\dfrac{1}{n+2} = 0$
+      </div>
+    `
+  },
+  {
+    icon: '∫',
+    title: '10. Первообразная. Неопределённый интеграл и его свойства',
+    body: `
+      <p><b>Опр.</b> Функцию $y = F(x)$ называют <b>первообразной</b> для функции $y = f(x)$ на промежутке $X$, если для любого $x \\in X$ выполняется равенство $F'(x) = f(x)$.</p>
+      <div class="example-box">
+        <b>Пример:</b> $F(x) = x^2$ является первообразной для функции $f(x) = 2x$.
+      </div>
+      <h4>Свойства</h4>
+      <p>Пусть $F(x)$ и $G(x)$ — первообразные соответственно функций $f(x)$ и $g(x)$ на некотором промежутке. Тогда:</p>
+      <div class="formula-block">
+        1. Функция $F(x) \\pm G(x)$ является первообразной функции $f(x) \\pm g(x)$.<br>
+        2. Функция $a \\cdot F(x)$ является первообразной функции $a \\cdot f(x)$.
+      </div>
+      <p><b>Теорема.</b> Если $y = F(x)$ — первообразная для функции $y = f(x)$ на промежутке $X$, то у функции $y = f(x)$ бесконечно много первообразных, и все они имеют вид $y = F(x) + C$.</p>
+      <p><b>Опр.</b> <b>Неопределённый интеграл</b> для функции $f(x)$ — это совокупность всех первообразных данной функции.</p>
+      <div class="formula-block">
+        $\\displaystyle\\int f(x)\\,dx = F(x) + C$
+      </div>
+      <div class="example-box">
+        <b>Пример:</b> $\\displaystyle\\int x\\,dx = \\dfrac{x^2}{2} + C$
+      </div>
+    `
+  }
+];
+
+(function buildTheoryAccordion() {
+  const container = document.getElementById('theory-accordion');
+  THEORY_TOPICS.forEach((topic, idx) => {
+    const card = document.createElement('div');
+    card.className = 'theory-card';
+    card.innerHTML = `
+      <div class="theory-card-header" onclick="toggleTheory(${idx})">
+        <span class="theory-card-icon">${topic.icon}</span>
+        <span class="theory-card-title">${topic.title}</span>
+        <span class="theory-card-arrow">▶</span>
+      </div>
+      <div class="theory-card-body">${topic.body}</div>
+    `;
+    container.appendChild(card);
+  });
+})();
+
+// ═══════════════════════════════════════
+// FLASHCARD DATA
+// ═══════════════════════════════════════
+function fc(q, a) { return { q, a }; }
+
+const FC_TOPICS = [
+  {
+    id: 'fc_intervals', icon: '📏', title: 'Метод интервалов',
+    cards: [
+      fc('Что такое неравенство?', 'Два математических выражения, соединённых одним из знаков: > (больше), < (меньше), ≤, ≥.'),
+      fc('Для решения каких неравенств используется метод интервалов?', 'Неравенств вида $f(x) > 0$, $f(x) < 0$, $f(x) \\geq 0$, $f(x) \\leq 0$.'),
+      fc('Шаг 1 метода интервалов.', 'Решить уравнение $f(x) = 0$ — найти все корни.'),
+      fc('Шаг 2 метода интервалов.', 'Отметить все найденные корни на координатной прямой — они делят её на промежутки.'),
+      fc('Шаги 3–4 метода интервалов.', 'Выбрать в каждом промежутке пробную точку, определить знак $f(x)$. Записать в ответ промежутки с нужным знаком.'),
+      fc('Включаются ли корни в ответ при строгом неравенстве ($f(x)>0$)?', 'Нет. При строгих неравенствах корни не включаются (скобки круглые). При нестрогих (≥, ≤) — включаются.'),
+    ]
+  },
+  {
+    id: 'fc_irrational', icon: '√', title: 'Иррациональные уравнения',
+    cards: [
+      fc('Что называется иррациональным уравнением?', 'Уравнение, в котором хотя бы одна из функций содержит переменную под знаком корня (радикала).'),
+      fc('Как решается уравнение $\\sqrt{f(x)} = g(x)$?', '$$\\sqrt{f(x)}=g(x)\\Leftrightarrow\\begin{cases}f(x)=g^2(x)\\\\g(x)\\geq 0\\end{cases}$$ Обязательно проверить корни!'),
+      fc('Как решается уравнение $\\sqrt{f(x)} = \\sqrt{g(x)}$?', '$$\\sqrt{f(x)}=\\sqrt{g(x)}\\Leftrightarrow\\begin{cases}f(x)=g(x)\\\\f(x)\\geq 0\\end{cases}$$'),
+      fc('Почему при решении иррациональных уравнений обязательна проверка?', 'При возведении в квадрат могут появиться посторонние (лишние) корни, которые не удовлетворяют условию $g(x) \\geq 0$.'),
+      fc('Пример: решить $\\sqrt{x+3} = x - 3$.', '$x+3=(x-3)^2$ и $x-3\\geq 0$. Раскрываем: $x^2-7x+6=0$, корни $x=1$ и $x=6$. Проверка: $x=1$: $3-1=-2<0$ — не подходит. Ответ: $x=6$.'),
+    ]
+  },
+  {
+    id: 'fc_trig', icon: '〰️', title: 'Чётность тригонометрических функций. Формулы приведения',
+    cards: [
+      fc('Какая тригонометрическая функция является чётной?', '$\\cos x$ — единственная чётная тригонометрическая функция: $\\cos(-x)=\\cos x$.'),
+      fc('Какие тригонометрические функции нечётные?', '$\\sin x$, $\\operatorname{tg} x$, $\\operatorname{ctg} x$. Например: $\\sin(-x)=-\\sin x$.'),
+      fc('Сформулируйте правило знака в формулах приведения.', 'В правой части ставится тот знак, который имеет левая часть при $0 < \\alpha < \\frac{\\pi}{2}$.'),
+      fc('Когда функция меняется в формулах приведения?', 'Если в левой части угол $\\frac{\\pi}{2}\\pm\\alpha$ или $\\frac{3\\pi}{2}\\pm\\alpha$: sin↔cos, tg↔ctg. При $\\pi\\pm\\alpha$ и $2\\pi\\pm\\alpha$ — функция не меняется.'),
+      fc('Вычислите $\\cos\\left(\\frac{\\pi}{2}+\\alpha\\right)$.', '$\\cos\\left(\\frac{\\pi}{2}+\\alpha\\right) = -\\sin\\alpha$. Угол $\\frac{\\pi}{2}+\\alpha$: функция меняется cos→sin, знак «минус» (при $\\alpha\\in(0,\\frac{\\pi}{2})$ левая часть отрицательна).'),
+      fc('Вычислите $\\operatorname{tg}(\\pi - \\alpha)$.', '$\\operatorname{tg}(\\pi-\\alpha) = -\\operatorname{tg}\\alpha$. Угол $\\pi\\pm\\alpha$: функция не меняется, знак «минус».'),
+    ]
+  },
+  {
+    id: 'fc_stereo', icon: '🔺', title: 'Аксиомы стереометрии',
+    cards: [
+      fc('Назовите основные неопределяемые понятия стереометрии.', 'Точка, прямая, плоскость. (В отличие от планиметрии, добавляется понятие «плоскость».)'),
+      fc('Сформулируйте аксиому 1 стереометрии.', 'Через любые три точки, не лежащие на одной прямой, проходит плоскость, и притом только одна.'),
+      fc('Сформулируйте аксиому 2 стереометрии.', 'Если две точки прямой лежат в плоскости, то и вся прямая лежит в этой плоскости.'),
+      fc('Сформулируйте аксиому 3 стереометрии.', 'Если две плоскости имеют общую точку, то они имеют общую прямую, на которой лежат все общие точки этих плоскостей.'),
+      fc('Сколько плоскостей проходит через прямую и точку вне неё?', 'Ровно одна — это следствие из аксиомы 1.'),
+    ]
+  },
+  {
+    id: 'fc_log', icon: '📊', title: 'Логарифмы',
+    cards: [
+      fc('Дайте определение логарифма.', '$\\log_a b$ — показатель степени, в которую нужно возвести $a$, чтобы получить $b$. То есть: $\\log_a b = x \\Leftrightarrow a^x = b$.'),
+      fc('При каких условиях логарифм определён?', '$a > 0$, $a \\neq 1$, $b > 0$.'),
+      fc('Сформулируйте свойство логарифма произведения.', '$\\log_a(mn) = \\log_a m + \\log_a n$'),
+      fc('Сформулируйте свойство логарифма частного.', '$\\log_a\\dfrac{m}{n} = \\log_a m - \\log_a n$'),
+      fc('Сформулируйте свойство логарифма степени.', '$\\log_a(m^n) = n \\cdot \\log_a m$'),
+      fc('Запишите формулу перехода к другому основанию.', '$\\log_a b = \\dfrac{\\log_c b}{\\log_c a}$. Частный случай: $\\log_a b = \\dfrac{1}{\\log_b a}$.'),
+      fc('Что такое натуральный и десятичный логарифм?', '$\\ln x = \\log_e x$ (натуральный), $\\lg x = \\log_{10} x$ (десятичный).'),
+      fc('Запишите основное логарифмическое тождество.', '$a^{\\log_a b} = b$. Это прямое следствие определения логарифма.'),
+    ]
+  },
+  {
+    id: 'fc_integral', icon: '∫', title: 'Определённый интеграл',
+    cards: [
+      fc('Как строится определённый интеграл?', 'Разбиваем $[a;b]$ на $n$ частей, составляем интегральную сумму $S_n = \\sum f(x_k)\\Delta x_k$, берём предел при $n\\to\\infty$.'),
+      fc('Что называется определённым интегралом?', '$$\\int_a^b f(x)\\,dx = \\lim_{n\\to\\infty} S_n$$'),
+      fc('Сформулируйте формулу Ньютона–Лейбница.', '$$\\int_a^b f(x)\\,dx = F(b)-F(a)$$ где $F(x)$ — любая первообразная $f(x)$.'),
+      fc('Свойство 1 определённого интеграла (линейность по сумме).', '$\\int_a^b[f(x)+g(x)]\\,dx = \\int_a^b f\\,dx + \\int_a^b g\\,dx$'),
+      fc('Свойство 2 определённого интеграла (вынесение константы).', '$\\int_a^b c\\cdot f(x)\\,dx = c\\cdot\\int_a^b f(x)\\,dx$'),
+      fc('Чему равен интеграл, если верхний и нижний пределы совпадают?', '$\\int_a^a f(x)\\,dx = 0$'),
+    ]
+  },
+  {
+    id: 'fc_deriv', icon: '📉', title: 'Производная',
+    cards: [
+      fc('Что такое приращение аргумента и приращение функции?', '$\\Delta x = x_1 - x_0$ — приращение аргумента; $\\Delta y = f(x_0+\\Delta x)-f(x_0)$ — приращение функции.'),
+      fc('Дайте определение производной функции в точке $x_0$.', '$$f\'(x_0) = \\lim_{\\Delta x\\to 0}\\frac{\\Delta y}{\\Delta x} = \\lim_{\\Delta x\\to 0}\\frac{f(x_0+\\Delta x)-f(x_0)}{\\Delta x}$$'),
+      fc('Каков геометрический смысл производной?', '$f\'(x_0)$ — угловой коэффициент касательной к графику функции в точке $x_0$.'),
+      fc('Каков физический смысл производной?', 'Производная — мгновенная скорость изменения функции (например, скорость движения, если $f(t)$ — путь).'),
+      fc('Что значит, что функция дифференцируема в точке?', 'Существует конечный предел $\\lim_{\\Delta x\\to 0}\\frac{\\Delta y}{\\Delta x}$. Дифференцируемость влечёт непрерывность (обратное неверно).'),
+    ]
+  },
+  {
+    id: 'fc_4steps', icon: '🔢', title: 'Правило четырёх шагов',
+    cards: [
+      fc('Шаг 1 правила четырёх шагов.', 'Зафиксировать $x$, найти $f(x)$. Дать аргументу приращение $\\Delta x$, найти $f(x+\\Delta x)$.'),
+      fc('Шаг 2 правила четырёх шагов.', 'Найти приращение функции: $\\Delta y = f(x+\\Delta x) - f(x)$.'),
+      fc('Шаг 3 правила четырёх шагов.', 'Составить отношение: $\\dfrac{\\Delta y}{\\Delta x}$.'),
+      fc('Шаг 4 правила четырёх шагов.', 'Вычислить предел: $f\'(x) = \\lim_{\\Delta x\\to 0}\\dfrac{\\Delta y}{\\Delta x}$.'),
+      fc('Применить правило 4 шагов к $f(x)=x^2$.', '1. $f(x+\\Delta x)=x^2+2x\\Delta x+(\\Delta x)^2$\n2. $\\Delta y=2x\\Delta x+(\\Delta x)^2$\n3. $\\frac{\\Delta y}{\\Delta x}=2x+\\Delta x$\n4. $\\lim_{\\Delta x\\to 0}(2x+\\Delta x)=2x$ &nbsp;→ $f\'(x)=2x$ ✓'),
+    ]
+  },
+  {
+    id: 'fc_seq', icon: '🔁', title: 'Числовые последовательности',
+    cards: [
+      fc('Что называется числовой последовательностью?', 'Функция $a:\\mathbb{N}\\to\\mathbb{R}$ — каждому натуральному числу ставится в соответствие вещественное число $a_n$.'),
+      fc('Назовите три способа задания последовательности.', '1. Аналитический (формула): $a_n = n^2+4$\n2. Рекуррентный (через предыдущие): $a_{n+2}=a_{n+1}+a_n$\n3. Словесный: «последовательность простых чисел»'),
+      fc('Дайте определение предела последовательности.', 'Число $A$ — предел $(a_n)$, если $\\forall\\varepsilon>0\\;\\exists N\\in\\mathbb{N}\\;\\forall n>N:\\;|a_n-A|<\\varepsilon$. Обозначение: $\\lim_{n\\to\\infty}a_n=A$.'),
+      fc('Чему равен $\\lim_{n\\to\\infty}\\frac{1}{n}$?', '$\\lim_{n\\to\\infty}\\dfrac{1}{n}=0$, так как при больших $n$ дробь сколь угодно мала.'),
+      fc('Что означает запись $\\lim_{n\\to\\infty}a_n=A$ на "простом языке"?', 'Члены последовательности сколь угодно близко подходят к числу $A$ при достаточно большом номере $n$.'),
+    ]
+  },
+  {
+    id: 'fc_antideriv', icon: '∫', title: 'Первообразная и неопределённый интеграл',
+    cards: [
+      fc('Что такое первообразная?', 'Функция $F(x)$ — первообразная для $f(x)$ на промежутке $X$, если $F\'(x)=f(x)$ для любого $x\\in X$.'),
+      fc('Пример: найдите первообразную для $f(x)=3x^2$.', '$F(x)=x^3$, так как $(x^3)\'=3x^2$. Общий вид: $F(x)=x^3+C$.'),
+      fc('Теорема о множестве первообразных.', 'Если $F(x)$ — одна первообразная для $f(x)$ на $X$, то все первообразные имеют вид $F(x)+C$, $C\\in\\mathbb{R}$.'),
+      fc('Что такое неопределённый интеграл?', 'Совокупность всех первообразных функции $f(x)$: $\\int f(x)\\,dx = F(x)+C$.'),
+      fc('Свойства неопределённого интеграла (назовите два).', '1. $\\int[f\\pm g]\\,dx=\\int f\\,dx\\pm\\int g\\,dx$\n2. $\\int c\\cdot f\\,dx=c\\int f\\,dx$'),
+      fc('Запишите $\\int x^n dx$.', '$\\int x^n dx = \\dfrac{x^{n+1}}{n+1}+C$ при $n\\neq -1$.'),
+      fc('Запишите $\\int\\frac{1}{x}dx$, $\\int e^x dx$, $\\int\\sin x\\,dx$, $\\int\\cos x\\,dx$.', '$\\int\\frac{1}{x}dx=\\ln|x|+C$\n$\\int e^x dx=e^x+C$\n$\\int\\sin x\\,dx=-\\cos x+C$\n$\\int\\cos x\\,dx=\\sin x+C$'),
+    ]
+  },
+];
+
+// ═══════════════════════════════════════
+// FLASHCARD STATE & LOGIC
+// ═══════════════════════════════════════
+let fcCards = [], fcIdx = 0, fcKnew = 0, fcMissed = [];
+
+(function buildFcTopics() {
+  const list = document.getElementById('fc-topic-list');
+  FC_TOPICS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'fc-topic-btn';
+    btn.innerHTML = `<span class="fc-t-icon">${t.icon}</span><span class="fc-t-name">${t.title}</span><span class="fc-t-count">${t.cards.length} карточек</span>`;
+    btn.onclick = () => startFlashcards(t.id);
+    list.appendChild(btn);
+  });
+})();
+
+function startFlashcards(topicId) {
+  let cards = [];
+  if (topicId === 'all') {
+    FC_TOPICS.forEach(t => cards.push(...t.cards));
+    shuffle(cards);
+    document.getElementById('fc-title').textContent = '🔀 Все темы';
+  } else {
+    const t = FC_TOPICS.find(x => x.id === topicId);
+    cards = [...t.cards];
+    shuffle(cards);
+    document.getElementById('fc-title').textContent = t.icon + ' ' + t.title;
+  }
+  fcCards = cards;
+  fcIdx = 0; fcKnew = 0; fcMissed = [];
+  showFcCard();
+  show('screen-fc');
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function showFcCard() {
+  const card = fcCards[fcIdx];
+  const wrap = document.getElementById('fc-card-wrap');
+  const rating = document.getElementById('fc-rating');
+  const ph = document.getElementById('fc-rating-placeholder');
+
+  wrap.classList.remove('flipped');
+  rating.style.display = 'none';
+  ph.style.display = 'block';
+
+  const qEl = document.getElementById('fc-q-text');
+  const aEl = document.getElementById('fc-a-text');
+  qEl.innerHTML = card.q;
+  aEl.innerHTML = card.a.replace(/\n/g, '<br>');
+  renderIn(wrap);
+
+  // progress
+  const total = fcCards.length;
+  const pct = Math.round(fcIdx / total * 100);
+  document.getElementById('fc-prog-fill').style.width = pct + '%';
+  document.getElementById('fc-prog-label').textContent = `${fcIdx + 1} / ${total}`;
+}
+
+function flipCard() {
+  const wrap = document.getElementById('fc-card-wrap');
+  if (wrap.classList.contains('flipped')) return;
+  wrap.classList.add('flipped');
+  const rating = document.getElementById('fc-rating');
+  const ph = document.getElementById('fc-rating-placeholder');
+  setTimeout(() => {
+    rating.style.display = 'flex';
+    ph.style.display = 'none';
+  }, 300);
+}
+
+function rateCard(knew) {
+  if (knew) { fcKnew++; }
+  else { fcMissed.push(fcCards[fcIdx]); }
+
+  fcIdx++;
+  if (fcIdx < fcCards.length) {
+    showFcCard();
+  } else {
+    showFcResult();
+  }
+}
+
+function showFcResult() {
+  const total = fcCards.length;
+  const pct = Math.round(fcKnew / total * 100);
+  document.getElementById('fc-res-score').textContent = `${fcKnew} / ${total}`;
+  document.getElementById('fc-res-sub').textContent = `знал правильно · ${pct}%`;
+
+  let stars = '';
+  if (pct >= 90) stars = '⭐⭐⭐';
+  else if (pct >= 60) stars = '⭐⭐';
+  else stars = '⭐';
+  document.getElementById('fc-stars').textContent = stars;
+
+  const missedEl = document.getElementById('fc-missed-list');
+  if (fcMissed.length > 0) {
+    missedEl.innerHTML = '<h3 style="margin:0 0 10px;font-size:.95rem;color:var(--error)">❌ Повторите эти вопросы:</h3>';
+    fcMissed.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'review-item fail';
+      div.innerHTML = `<div class="review-icon">❌</div><div class="review-text"><b>${c.q}</b></div>`;
+      renderIn(div);
+      missedEl.appendChild(div);
+    });
+  } else {
+    missedEl.innerHTML = '<div class="review-item ok"><div class="review-icon">🎉</div><div class="review-text"><b>Все карточки — на отлично!</b></div></div>';
+  }
+
+  show('screen-fc-result');
+  renderIn(missedEl);
+}
+
+function retryMissed() {
+  if (fcMissed.length === 0) { show('screen-fc-topics'); return; }
+  fcCards = [...fcMissed];
+  shuffle(fcCards);
+  fcIdx = 0; fcKnew = 0; fcMissed = [];
+  document.getElementById('fc-title').textContent = '🔁 Повтор ошибок';
+  showFcCard();
+  show('screen-fc');
+}
+
+function toggleTheory(idx) {
+  const cards = document.querySelectorAll('.theory-card');
+  const card = cards[idx];
+  const wasOpen = card.classList.contains('open');
+  cards.forEach(c => c.classList.remove('open'));
+  if (!wasOpen) {
+    card.classList.add('open');
+    renderIn(card.querySelector('.theory-card-body'));
+  }
+}
+</script>
+</body>
+</html>

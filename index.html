@@ -1171,7 +1171,7 @@ function clearProgress() {
 // Build on page load
 buildExamCards();
 buildStatsBar();
-buildTopicCards();
+// buildTopicCards() called after TOPIC_META is defined below
 
 // ── TIMER ──────────────────────────────
 let timerInterval = null;
@@ -1269,6 +1269,7 @@ const TOPIC_META = {
   integral:{ icon: '∫'  },
   stepenn: { icon: '√'  },
 };
+buildTopicCards(); // called here — after TOPIC_META and TOPICS are both defined
 
 function recordTopicResult(topicId, correct, total) {
   const data = loadProgress();

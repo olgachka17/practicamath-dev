@@ -1246,11 +1246,13 @@ function show(id) {
 
 function startExam(id) {
   const e = EXAMS[id];
-  load(e.title, e.qs, null, true); // true = isExam
+  load(e.title, e.qs, null, true);
+  current.variantId = id;
 }
 function startTopic(id) {
   const t = TOPICS[id];
   load(t.title, t.qs, t.theory, false);
+  current.topicId = id;
 }
 
 const TOPIC_META = {
@@ -1524,15 +1526,13 @@ function showResults(timesUp = false) {
   }
 
   // save progress for exam variants
-  if (current.isExam) {
-    const variantId = Object.keys(EXAMS).find(k => EXAMS[k].qs === current.qs);
-    if (variantId) recordResult(variantId, correct, total, elapsed);
+  if (current.isExam && current.variantId) {
+    recordResult(current.variantId, correct, total, elapsed);
   }
 
   // save progress for topic trainer
-  if (!current.isExam && !current.isMistakes) {
-    const topicId = Object.keys(TOPICS).find(k => TOPICS[k].qs === current.qs);
-    if (topicId) recordTopicResult(topicId, correct, total);
+  if (!current.isExam && !current.isMistakes && current.topicId) {
+    recordTopicResult(current.topicId, correct, total);
   }
 }
 
@@ -1540,10 +1540,13 @@ function retryMistakes() {
   const qs = current.mistakeQs;
   if (!qs || qs.length === 0) return;
   load(`Работа над ошибками (${qs.length})`, qs, null, false);
-  current.isMistakes = true;
+  current.isMistakes = true; // set AFTER load (load resets current)
 }
 
 function retryExam() {
+  const wasExam = current.isExam;
+  const variantId = current.variantId;
+  const topicId = current.topicId;
   answers = current.qs.map(() => null);
   shuffled = current.qs.map(q => {
     const indices = [0,1,2,3];
@@ -1556,9 +1559,12 @@ function retryExam() {
     const correctOpts = correctIndices.map(ci => q.options[ci]);
     return { opts, correctOpts };
   });
+  current.isMistakes = false; // reset mistakes flag
+  if (variantId) current.variantId = variantId;
+  if (topicId) current.topicId = topicId;
   renderQuestions();
   show('screen-exam');
-  if (current.isExam) startTimer();
+  if (wasExam) startTimer();
   else stopTimer();
 }
 
